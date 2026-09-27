@@ -1,5 +1,5 @@
 // Uygulama kabugunu onbellege alir; namaz vakti ve ntfy istekleri her zaman agdan gider.
-const CACHE = 'vakit-v5';
+const CACHE = 'vakit-v6';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './baba.png'];
 
 self.addEventListener('install', e => {

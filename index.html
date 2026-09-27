@@ -257,66 +257,357 @@ function day(dk) {
 }
 
 /* ---------- Baba ---------- */
+/* Diyaloglar. Her soru yuvasi kendi havuzunda gunden gune siraya girer (rot),
+   havuz boyu = 20 gun x gunluk soru sayisi; boylece en az 20 gun ayni cumle tekrar etmez.
+   Tepkiler iki parcadan kurulur (combo): acilis x kapanis = 100 / 48 farkli cumle. */
 const L = {
-  pAsk: [
-    '{n} vakti çıktı. Kıldın, değil mi? Değil mi?',
-    '{n} bitti. Seccade mi serildi, yoksa yine telefon mu kaydırıldı?',
-    '{n} vakti gitti. Sen de gittin mi namaza, merak ettim.',
-    '{n} vakti çıktı. Cevabı tahmin ediyorum ama yine de soruyorum.',
-    'Evladım, {n} bitti. Kıldıysan söyle de bir sevineyim.'
-  ],
-  yAsk: [
-    'Yatmadan önce soruyorum: yatsı kılındı mı, yoksa yorgan mı kazandı?',
-    'Gece oldu. Yatsıyı kıldıysan rahat uyu. Kılmadıysan hiç uyuma, düşün biraz.',
-    'Yatsı? Hani şu günün son namazı. Hatırladın mı?'
-  ],
-  pYes: [
-    'Hah, şöyle. Bak insan olacaksın galiba.',
-    'Aferin. Seni boşuna yetiştirmemişiz.',
-    'Kabul olsun. Yüzüm gülüyor bak, bunu sık göremezsin.',
-    'Maşallah. Bunu bütün mahalleye anlatacağım.',
-    'Allah kabul etsin. Şaşırttın beni, güzel şaşırttın.'
-  ],
-  pNo: [
-    'Hmm. Kazasını kılarsın herhalde. Herhalde…',
-    'Hiç şaşırmadım. Şaşırsaydım daha çok üzülürdüm.',
-    'Telefona ayırdığın vaktin onda biri yeterdi. Neyse. Bari kazasını kıl.',
-    'Senin yaşındayken ben… Neyse, anlatsam ne olacak.',
-    'Beş vakitten birini bile tutturamadın ha. Helal olsun sana. Şaka şaka, helal olmasın.'
-  ],
-  pStart: [
-    '{n} vakti girdi. Kalk abdest al, telefon kaçmıyor.',
-    'Ezan okundu, {n} vakti. "Duymadım" deme, ben duydum.',
-    '{n} girdi. Hadi bir kere de ilk seferde kalk, şaşırt beni.'
-  ],
+  ask: {
+    sabah: [
+      'Güneş doğdu. Sabah namazını kıldın mı, yoksa alarmla kavgan mı sürüyor?',
+      'Sabah vakti çıktı. Kalktın mı, yoksa yorgan yine mi galip geldi?',
+      'Güneş doğdu evladım. Sabahı kıldın mı, dürüst ol.',
+      'Sabah namazı… Hani şu "yarın kesin kalkarım" dediğin. Kıldın mı?',
+      'Güneş çoktan doğdu. Sen de doğdun mu, namazı kıldın mı?',
+      'Sabahın bereketi erken kalkana. Kıldın mı bakalım?',
+      'Sabah vakti bitti. Seccade mi serildi, yastık mı kabardı?',
+      'Horoz bile kalktı. Sen sabahı kıldın mı?',
+      'Alarmı kaç kere erteledin, onu sormayacağım. Sabahı kıldın mı?',
+      'Güneş doğdu, kuşlar ötüyor. Senin namaz ne durumda?',
+      'Sabah namazı kaçtı mı, yakalandı mı? Merak içindeyim.',
+      'Ben senin yaşında ezandan önce kalkardım. Sen sabahı kıldın mı?',
+      'Sabah vakti çıktı evladım. Güne namazla mı başladın?',
+      'Günaydın demeden önce sorayım: sabahı kıldın mı?',
+      'Sabahı kılan güne bir sıfır önde başlar. Sen kaç kaçsın?',
+      'Gözünü açınca ilk iş ne oldu? Telefon mu, namaz mı?',
+      'Güneş doğdu, vakit çıktı. Kıldıysan bir çay koyayım.',
+      'Sabah namazı en zoru, biliyorum. O yüzden soruyorum: kıldın mı?',
+      'Uykunun tatlısı sabah namazından sonra uyunur. Kıldın mı?',
+      'Sabah vakti çıktı. "Uyuyordum" diyeceksen hiç söyleme, yüzünden anlarım.'
+    ],
+    ogle: [
+      'Öğle vakti çıktı. İşin gücün arasında kıldın mı?',
+      'Öğle bitti. Öğle yemeğini unutmadın, namazı unuttun mu?',
+      'Öğle vakti gitti. Toplantı mı uzadı, yoksa kıldın mı?',
+      'Öğleyi kıldın mı? "Çok yoğundum" deme, herkes yoğun.',
+      'Öğle vakti çıktı evladım. Dört rekat on dakika, biliyorsun.',
+      'Gün ortası geçti. Öğleyi kıldıysan bir aferin hak ettin.',
+      'Öğle namazı… Kıldın mı, yoksa "akşam toplu kılarım" mı diyeceksin?',
+      'Karnını doyurdun, ruhunu doyurdun mu? Öğleyi kıldın mı?',
+      'Öğle vakti çıktı. Ben sormadan söyleseydin daha çok sevinirdim. Kıldın mı?',
+      'Öğle bitti yavrum. Ekrandan başını kaldırıp kıldın mı?',
+      'Öğleyi kıldın mı? Mesai bahane değil.',
+      'Güneş tepeden kaydı, öğle vakti çıktı. Kıldın mı?',
+      'Öğle namazını sordum diye bozulma. Kıldın mı?',
+      'Öğle vakti gitti. Namaz mı kılındı, yoksa mesaj mı yazıldı?',
+      'Öğle geçti. Kıldıysan bugünün yarısı iyi gitmiş demektir.',
+      'Öğleyi kıldın mı? Bir "evet" duysam bütün günüm güzelleşecek.',
+      'Öğle vakti çıktı. Bir dizi bölümü kadar bile sürmüyor. Kıldın mı?',
+      'Yemekten sonra çay, çaydan önce namaz. Öğleyi kıldın mı?',
+      'Öğle vakti bitti. Kıldın mı, yoksa yine mi hayal kırıklığı?',
+      'Öğle namazı kaçtı mı? Kaçmadıysa söyle de bir rahatlayayım.'
+    ],
+    ikindi: [
+      'İkindi vakti çıktı. Günün yorgunluğunda kıldın mı?',
+      'Akşam ezanı okundu, ikindi bitti. Kılabildin mi?',
+      'İkindiyi kıldın mı? En çok kaçırılan vakittir, bilirim.',
+      'İkindi vakti gitti evladım. Yetiştin mi?',
+      'İkindi bitti. Çay saatinde namaz saatini de hatırladın mı?',
+      'Güneş batıyor, ikindi çıktı. Kıldın mı bakalım?',
+      'İkindi namazı… O "sonra kılarım" dediğin vakit. Kıldın mı?',
+      'İkindiyi kıldıysan günün çoğu kurtuldu. Kıldın mı?',
+      'İkindi vakti çıktı. Yolda mıydın, işte miydin, yoksa kıldın mı?',
+      'Gün batımını seyretmeden önce sorayım: ikindiyi kıldın mı?',
+      'İkindi geçti. "Bir dakika" dedin de saatler mi geçti, yoksa kıldın mı?',
+      'İkindi vakti bitti. Kıldıysan göğsünü gere gere söyle.',
+      'İkindi bitti yavrum. Günü toparlarken namazı da toparladın mı?',
+      'İkindi vakti gitti. Kahveden önce mi kıldın, sonra mı, hiç mi?',
+      'İkindi çıktı. Vaktinde kılınan namaz başka güzel. Kıldın mı?',
+      'Akşam oluyor. İkindiyi sen mi kıldın, yoksa gün seni mi yordu?',
+      'İkindi vakti bitti. Söyle bakalım, bugün ikindi mi kazandı tembellik mi?',
+      'İkindiyi kıldın mı? Ben saydım, sen de say.',
+      'İkindi vakti çıktı. Kıldıysan akşam yemeği daha lezzetli gelir.',
+      'İkindi kaçtı mı? Kaçtıysa da söyle, yalana hiç dayanamam.'
+    ],
+    aksam: [
+      'Akşam vakti çıktı. Sofradan kalkıp kıldın mı?',
+      'Akşam bitti. Yemek mi önce geldi, namaz mı?',
+      'Akşam namazı kısacık, üç rekat. Kıldın mı?',
+      'Yatsı ezanı okundu, akşam gitti. Yetiştin mi?',
+      'Akşamı kıldın mı evladım? Günün hesabı yavaş yavaş kapanıyor.',
+      'Akşam vakti çıktı. Dizinin başına oturmadan kıldın mı?',
+      'Akşamı soruyorum. Kıldıysan hemen söyle, bekliyorum.',
+      'Akşam bitti. Eve gelince ayakkabıyı çıkardın, namazı kıldın mı?',
+      'Akşam en kısa vakittir. Yetiştirebildin mi?',
+      'Akşam gitti yavrum. Kılmadıysan bile söyle, kızmam. Biraz kızarım.',
+      'Güneş battı, akşam da çıktı. Kıldın mı?',
+      'Akşam yemeğinin üstüne bir de akşamı kıldıysan tadından yenmez. Kıldın mı?',
+      'Akşamı kıldın mı? Televizyon bekler, namaz beklemez.',
+      'Akşam bitti. Kıldın mı kılmadın mı gözlerinden anlarım ama yine de soruyorum.',
+      'Akşamı kıldın mı? Bugün kaç vakit oldu, bir sayalım.',
+      'Akşam vakti çıktı. Kıldıysan yatsıya da hazırsın demektir.',
+      'Akşam bitti. Telefon elindeydi, biliyorum. Namaz da elinde miydi?',
+      'Akşamı kıldın mı? Bu saatte yorgunluk bahane olmaz.',
+      'Akşam çıktı evladım. Kıldın mı, yoksa "yatsıyla birleştiririm" mi diyorsun?',
+      'Akşamı sordum diye bozulma, bu benim işim. Kıldın mı?'
+    ],
+    yatsi: [
+      'Yatmadan önce soruyorum: yatsı kılındı mı, yoksa yorgan mı kazandı?',
+      'Gece oldu. Yatsıyı kıldıysan rahat uyu. Kılmadıysan hiç uyuma, düşün biraz.',
+      'Yatsı? Hani şu günün son namazı. Hatırladın mı?',
+      'Işıkları kapatmadan önce: yatsıyı kıldın mı?',
+      'Günün son sorusu: yatsı tamam mı?',
+      'Telefonu şarja takmadan önce yatsıyı kıldın mı?',
+      'Yatsıyı kıldıysan iyi geceler. Kılmadıysan kötü geceler değil ama… kıl.',
+      'Gece yarısı yaklaşıyor. Yatsıyı kıldın mı evladım?',
+      'Dişlerini fırçaladın mı? Yatsıyı kıldın mı? İkisini de soruyorum.',
+      'Yatsının vakti hâlâ var ama ben seni tanırım. Kıldın mı?',
+      'Bugünü yatsıyla kapattın mı, yoksa kapak açık mı kaldı?',
+      'Yatmadan bir soru: yatsı? Evet ya da hayır, uzatma.',
+      'Uyku tatlıdır, yatsı daha tatlı. Kıldın mı?',
+      'Yatsıyı kıldın mı? Kılmadıysan yastığın kuş tüyü olsa ne yazar.',
+      'Günün muhasebesi: yatsı hanesine ne yazayım?',
+      'Yatsıyı kıldın mı? Sabaha kalkabilmenin sırrı buradan başlar.',
+      'Gece oldu yavrum. Yatsını kıldın mı, öyle yat.',
+      'Uyumadan önce sorayım: yatsı tamam mı?',
+      'Yatsıyı kıldıysan bu gece rüyanda beni gülerken görürsün.',
+      'Yatsı… Kıldın mı, yoksa "yarın kaza ederim" mi?'
+    ]
+  },
   wAsk: [
     'Su içtin mi? Çay sayılmaz, kahve hiç sayılmaz.',
-    'Antalya\'da yaşayıp su içmemek de ayrı bir yetenek. İçtin mi?',
-    'Saksıdaki çiçek bile senden çok su içiyor. Sen içtin mi bugün?',
-    'Su içtin mi evladım, yoksa yine "susamadım" mı diyeceksin?'
+    'Antalya\'da yaşayıp su içmemek de ayrı bir yetenek. Kaç bardak oldu?',
+    'Saksıdaki çiçek bile senden çok su içiyor. Sen kaç bardak içtin?',
+    'Su içtin mi evladım, yoksa yine "susamadım" mı diyeceksin?',
+    'Kaç bardak su içtin? Dürüst ol, saymıyorum sanma.',
+    'Dudakların çatlamış gibi duruyor. Su içtin mi?',
+    'Bir bardak su bedava. Kaç tane içtin?',
+    'Başın ağrıyorsa sebebi belli. Kaç bardak su içtin?',
+    'Kola su değildir, ayran yarım sayılır. Kaç bardak içtin?',
+    'Suyu şişede bekletmek içmek sayılmıyor. Kaç bardak?',
+    'Vücudunun yüzde altmışı su, gerisi bahane. Kaç bardak içtin?',
+    'Su içmeyi hatırlatan bir tek ben kaldım. İçtin mi?',
+    'Masadaki bardak hâlâ dolu mu? Kaç bardak içtin bugün?',
+    'Cildin kuru, gözün yorgun. Su içtin mi yavrum?',
+    'Deve bile bu kadar susuz durmaz. Kaç bardak içtin?',
+    'Su soruyorum, cevabın "bir yudum" olmasın. Kaç bardak?',
+    'Kaç bardak su içtin? Ben senin yaşında çeşmeden kana kana içerdim.',
+    'Sıcakta su içmeyen, akşam başı ağrıyınca bana gelmesin. Kaç bardak?',
+    'Böbreklerin bana dilekçe yazdı, susuzluktan şikayetçiler. Kaç bardak içtin?',
+    'Hadi bakalım, bugünkü su karnesi: kaç bardak?',
+    'Bir bardak su bir dakika sürer. Kaç dakikanı ayırdın bugün?',
+    'Çay demlemeyi biliyorsun, su içmeyi de bilirsin herhalde. Kaç bardak?',
+    'Susadıysan zaten geç kalmışsın demektir. Kaç bardak içtin?',
+    'Su içtin mi, yoksa sadece su içmeyi mi düşündün?',
+    'Bak, bardak orada, musluk orada. Kaç bardak içtin?',
+    'Suyun hesabını soruyorum. Kaç bardak?',
+    'Kafein dolu bir gün daha mı? Su da içtin mi?',
+    'Bu havada su içmeyen kuruyup gider. Sen kaç bardaktasın?',
+    'Su içtin mi evladım? Yüzün soluk görünüyor.',
+    'Bugün sudan ne haber? Kaç bardak?',
+    'Hedef belli, bardak belli. Kaç tane içtin?',
+    'İnsan sudan ibaret, sen neden ibaretsin? Kaç bardak içtin?',
+    'Doldurup unuttuğun bardaklar dile gelse ne derdi? Kaç bardak içtin?',
+    'Kaç bardak su içtin? Rakamı yüksek söyle ki sevineyim.',
+    'Bir bardak daha içsen ne kaybedersin? Şimdiye kadar kaç bardak?',
+    'Su içmeyi unutan biri var, ismini vermeyeyim. Kaç bardak içtin?',
+    'Balık değilsin ama sana da su lazım. Kaç bardak?',
+    'Kaç bardak içtin? "Yemekte içtim" dersen bir sayarım.',
+    'Gün boyu su içtin mi, yoksa sadece şikayet mi ettin?',
+    'Su molası! Kaç bardak içtin bugün?'
   ],
-  wYes: ['Oh, sonunda. Böbreklerin sana teşekkür mektubu yazıyor.', 'Aferin. Bak cildin bile açıldı.', 'İyi. Bir bardak daha iç, bir şey olmaz.'],
-  wNo: ['Kuruyup gideceksin, kuru üzüm gibi. Kalk bir bardak doldur.', 'Su içmeyi beceremiyorsan başka neyi becereceksin? Hadi, bardak.', 'Kaktüs müsün evladım sen? Kalk su iç.'],
   sAsk: [
     'Bugün hareket ettin mi, yoksa koltuk yine seni mi yendi?',
     'Spor yaptın mı? Buzdolabına yürümek sayılmıyor.',
     'Merdiven çıktın diye "spor yaptım" deme. Yaptın mı?',
-    'Gün bitiyor. Spor yaptın mı, yoksa yarına mı kaldı yine?'
+    'Gün bitiyor. Spor yaptın mı, yoksa yarına mı kaldı yine?',
+    'Kaç dakika spor yaptın? Parmak egzersizi sayılmaz.',
+    'Ayakkabılar kapının önünde bekliyor. Bugün giydin mi?',
+    'Kaslar kullanılmayınca paslanır. Bugün kaç dakika çalıştırdın?',
+    'Spor yaptın mı evladım? Yarım saat yürümek bile yeter.',
+    'Bugün terledin mi? Sıcaktan terlemek sayılmıyor.',
+    'Göbek büyüyor mu, ben mi yanlış görüyorum? Spor yaptın mı?',
+    'Bütün gün oturma yavrum. Kaç dakika hareket ettin?',
+    'Spor salonu kartı cüzdanda durunca spor olmuyor. Gittin mi?',
+    'Bugün kalbini biraz hızlandırdın mı? Kahveyle değil ama.',
+    'Kaç adım attın bugün? Adımsayar yalan söylemez, sen de söyleme.',
+    'Spor yaptın mı? "Yarın başlıyorum" cümleni artık ezberledim.',
+    'Beden sana emanet. Bugün ona ne kadar vakit ayırdın?',
+    'Bir tur yürüyüş, biraz esneme… Bugün ne yaptın?',
+    'Sabah koşusu mu, akşam yürüyüşü mü, hiçbiri mi? Söyle bakalım.',
+    'Spor yaptın mı? Kumandayı kaldırmak ağırlık çalışması sayılmaz.',
+    'Bugün vücuduna teşekkür ettin mi? Hareket ederek yani.',
+    'Kaç dakika spor? Sıfırsa sesini alçalt, komşular duymasın.',
+    'Yaşlanınca bana benzeme diye soruyorum: spor yaptın mı?',
+    'Dizler gıcırdamadan hareket etmek lazım. Bugün ettin mi?',
+    'Spor yaptın mı? Otobüse koşmak da sayılır, bu seferlik.',
+    'Bugün biraz ter döktün mü, yoksa sadece iç mi çektin?',
+    'Hareketsizlik insanı sessiz sedasız yer. Bugün kaç dakika hareket ettin?',
+    'İki dakika bile sıfırdan iyidir. Bugün ne yaptın?',
+    'Bugünkü spor raporu lütfen. Kaç dakika?',
+    'Bisiklet, yürüyüş, şınav… Hangisi oldu bugün?',
+    'Spor yaptın mı? Ekranı kaydırmak başparmak sporu, o sayılmıyor.',
+    'Oturmaktan sandalye bile yoruldu. Kalktın mı biraz?',
+    'Bugün nefesin hızlandı mı? Merdivenden değil, spordan.',
+    'Kaç dakika spor yaptın? Yuvarlama, olduğu gibi söyle.',
+    'Yemekten sonra bir tur attın mı, yoksa kanepe mi seni yuttu?',
+    'Sağlam kafa sağlam vücutta bulunur. Bugün vücut ne yaptı?',
+    'Spor yaptın mı? Hayır dersen üzülürüm, evet dersen şaşırırım.',
+    'Bugün kendine kaç dakika ayırdın? Spor olarak yani.',
+    'Yürüyüş ayakkabısının tozunu aldın mı bugün?',
+    'Spor saati çoktan geçti. Sen mi zamanı geçtin, zaman mı seni?',
+    'Kaslarına bugün bir selam verdin mi? Kaç dakika?'
   ],
-  sYes: ['Vay! Kimse inanmaz ama ben inanıyorum.', 'Aferin. Göbek biraz korktu şu an.', 'Helal. Yarın da yaparsan seni ciddiye alacağım.'],
-  sNo: ['Koltuk yine kazandı demek. Koltuğu tebrik ederim.', 'Senin yaşında ben tarlada çalışıyordum. Sen parmağını kaydırıyorsun.', 'Olur olur. "Yarın başlarım" dersin, biliyorum.'],
-  hello: {
-    gece: ['Bu saatte ayakta ne işin var? Sabah namazına kalkacaksın ya, değil mi?'],
-    sabah: ['Günaydın. Kalktın mı, yoksa kaldırıldın mı?', 'Sabah sabah iyi gördüm seni. Bakalım akşama kadar dayanacak mı.'],
-    ogle: ['Gün yarılandı. Bakalım bugün yüzümü güldürecek misin.', 'Buradayım, izliyorum. Haberin olsun.'],
-    aksam: ['Akşam oldu. Hesap vakti yaklaşıyor.', 'Günün nasıl geçti? Ben biliyorum ama sen yine de anlat.']
+  react: {
+    p: {
+      yes: [
+        ['Maşallah.', 'Aferin.', 'Helal olsun.', 'Allah kabul etsin.', 'Hah, şöyle.', 'Oh, içim rahatladı.', 'İşte bu.', 'Gözlerim doldu, abartmıyorum.', 'Bak sen şu işe.', 'Tamam, not ettim.'],
+        ['Bak insan olacaksın galiba.', 'Seni boşuna yetiştirmemişiz.', 'Bunu bütün mahalleye anlatacağım.', 'Yüzüm gülüyor, bunu sık göremezsin.', 'Böyle devam, ben buradayım.', 'Bir dahakine sormadan söyle.', 'Duan da kabul olsun inşallah.', 'Şaşırttın beni, güzel şaşırttın.', 'Şımarma ama, gün daha bitmedi.', 'Senden bunu bekliyordum. Yalan, beklemiyordum.']
+      ],
+      no: [
+        ['Hmm.', 'Hiç şaşırmadım.', 'Peki.', 'Anladım.', 'Vay vay vay.', 'Tahmin etmiştim.', 'Bak sen.', 'Üzüldüm, saklamayacağım.', 'Yazık.', 'Tamam, bir şey demiyorum.'],
+        ['Kazasını kılarsın herhalde. Herhalde…', 'Telefona ayırdığın vaktin onda biri yeterdi.', 'Senin yaşındayken ben… Neyse, anlatsam ne olacak.', 'Bari kazasını kıl da yüzüm kızarmasın.', 'Bir sonrakini vaktinde kılarsan bunu unuturum. Belki.', 'Namaz beklemez, sen beklettin.', 'Beş vakitten birini tutturamamak da bir başarı. Değil tabii.', 'Kızmadım, sadece hayal kırıklığına uğradım. Daha kötü.', 'Abdest alıp kazasını kıl, sonra konuşuruz.', 'Mazeretin hazırdır, dinlemeyeceğim.']
+      ]
+    },
+    w: {
+      yes: [
+        ['Oh, sonunda.', 'Aferin.', 'Bravo.', 'İşte böyle.', 'Maşallah.', 'Bak sen!', 'Güzel.', 'Tamam, yazdım.'],
+        ['Böbreklerin sana teşekkür mektubu yazıyor.', 'Bak cildin bile açıldı.', 'Bir bardak daha iç, bir şey olmaz.', 'Su gibi aziz ol evladım.', 'Deve bile kıskandı.', 'Akşama baş ağrısı yok demektir.']
+      ],
+      no: [
+        ['Olmaz öyle.', 'Hiç şaşırmadım.', 'Yazık.', 'Tövbe tövbe.', 'Anladım.', 'Bak sen.', 'Hmm.', 'Vay.'],
+        ['Kuruyup gideceksin, kuru üzüm gibi. Kalk bir bardak doldur.', 'Su içmeyi beceremiyorsan başka neyi becereceksin? Hadi, bardak.', 'Kaktüs müsün evladım sen? Kalk su iç.', 'Musluk üç adım ötede, ben saydım.', 'Başın ağrıyınca bana gelme.', 'Şimdi bir bardak iç, ben buradan izliyorum.']
+      ]
+    },
+    s: {
+      yes: [
+        ['Vay!', 'Aferin.', 'Helal.', 'Maşallah.', 'Bak sen!', 'Oh be.', 'İşte bu.', 'Tamam, not ettim.'],
+        ['Kimse inanmaz ama ben inanıyorum.', 'Göbek biraz korktu şu an.', 'Yarın da yaparsan seni ciddiye alacağım.', 'Sağlığına sağlık.', 'Dizlerin sana dua ediyor.', 'Bu gidişle beni de yürüyüşe çıkaracaksın.']
+      ],
+      no: [
+        ['Hmm.', 'Olur olur.', 'Tahmin etmiştim.', 'Peki.', 'Yazık.', 'Anladım.', 'Vay vay.', 'Bak sen.'],
+        ['Koltuk yine kazandı demek. Koltuğu tebrik ederim.', 'Senin yaşında ben tarlada çalışıyordum. Sen parmağını kaydırıyorsun.', '"Yarın başlarım" dersin, biliyorum.', 'On dakika yürüsen dünya yıkılmazdı.', 'Kaslar unutulunca küser, haberin olsun.', 'Bari akşam yemeğinden sonra bir tur at.']
+      ]
+    }
   },
-  // aksatinca: acima ve laf sokma
-  lagPray: ['Bugün {x} vakit kaçmış. Bakıyorum, bakıyorum, bir şey diyemiyorum.', '{x} vakit kaza. Bu gidişle kazaların kazası olacak.'],
-  lagWater: ['Günde {x} litreyle mi yaşıyorsun? Deve misin evladım?', '{x} litre… Bu suyla çiçek bile sulanmaz.'],
-  lagSport: ['Bugün sıfır dakika spor. Sıfır. Rakamla yazayım: 0.', 'Hareket etmeyen bir sen varsın, bir de şu duvar.'],
-  allDone: ['Bugün her şey tamam. Bunu çerçeveletip duvara asacağım.', 'Kusursuz bir gün. Kimseye söyleme, şımarırsın.']
+  pStart: [
+    ['{n} vakti girdi.', 'Ezan okundu, {n} vakti.', '{n} girdi evladım.', 'Hadi bakalım, {n} vakti.', '{n} vakti geldi çattı.', 'Kulak ver, {n} ezanı okunuyor.', 'Saat tamam: {n}.', '{n} vakti başladı.', '{n} için vakit geldi.', 'Dikkat, {n} vakti.'],
+    ['Kalk abdest al, telefon kaçmıyor.', '"Duymadım" deme, ben duydum.', 'Bir kere de ilk seferde kalk, şaşırt beni.', 'Erteleme, erteleyince kaçıyor.', 'On dakikanı ayır, gerisi senin.', 'İşi bırak, namaz beklemez.', 'Seccade seni bekliyor.', 'Vaktinde kılınan namazın tadı başka.', 'Bu sefer sormama gerek kalmasın.', 'Hadi, ben saymaya başladım bile.']
+  ],
+  hello: {
+    gece: [['Bu saatte ayakta ne işin var?', 'Hâlâ uyumadın mı?', 'Gece yarısı ekran başında ha?', 'Uyku tutmadı mı yine?', 'Baykuş musun evladım sen?'],
+      ['Sabah namazına kalkacaksın ya, değil mi?', 'Erken yat, erken kalk, bilirsin.', 'Telefonu bırak da uyu artık.', 'Yarın sabah yüzünü görünce anlarım.']],
+    sabah: [['Günaydın.', 'Hayırlı sabahlar.', 'Sabah sabah iyi gördüm seni.', 'Kalktın mı, kaldırıldın mı?', 'Güne başladık bakalım.'],
+      ['Kahvaltını yap, suyunu iç.', 'Bakalım bugün yüzümü güldürecek misin.', 'Bugün güzel bir gün olacak inşallah.', 'Sporu akşama bırakma, biliyorum seni.']],
+    ogle: [['Gün yarılandı.', 'Hayırlı günler.', 'Nasılsın bakalım?', 'Öğleden sonra rehaveti başladı mı?', 'Buradayım, izliyorum.'],
+      ['Suyunu içmeyi unutma.', 'Bakalım akşama kadar dayanacak mısın.', 'Namaz, su, spor. Listeyi biliyorsun.', 'Ekrandan başını kaldır bir.']],
+    aksam: [['Hayırlı akşamlar.', 'Akşam oldu.', 'Günün nasıl geçti?', 'Eve geldin mi?', 'Günün yorgunluğu çöktü mü?'],
+      ['Hesap vakti yaklaşıyor.', 'Ben biliyorum ama sen yine de anlat.', 'Bugünkü karnene birazdan bakacağız.', 'Yatsıya az kaldı, haberin olsun.']]
+  },
+  lagPray: [
+    'Bugün {x} vakit kaçmış. Bakıyorum, bakıyorum, bir şey diyemiyorum.',
+    '{x} vakit kaza. Bu gidişle kazaların kazası olacak.',
+    '{x} vakit kaçırdın. Kaza defterini ben mi tutayım artık?',
+    'Bugün {x} vakit eksik. Rakamı yüksek sesle okumayacağım, utanırsın.',
+    '{x} vakit… Eskiden daha iyiydin, ya da bana öyle gelmiş.',
+    'Kaçan {x} vakit için bir şey demeyeceğim. Yüzüme bakman yeter.',
+    '{x} vakit kaza kaldı. Akşam oturup kılarsın, değil mi? Değil mi?',
+    'Bugün {x} vakit kaçtı. Hangi işin namazdan önemliydi, merak ettim.',
+    '{x} vakit eksik. Ben üzülmem, alışığım. Yalan, üzülüyorum.',
+    'Namaz tablon bugün {x} boşluklu. Doldurmak senin elinde.',
+    '{x} vakit kaçırmışsın. Telefon ekranı kadar namaza baksan…',
+    'Bugünün karnesinde {x} tane kırık not var.',
+    '{x} vakit gitti. Vakit geri gelmez ama kaza kılınır, hadi.',
+    '{x} vakit kaza. Sana kızmıyorum, sadece iç çekiyorum.',
+    'Bugün {x} vakti kaçırdın ha. Tebrik edecek değilim.',
+    '{x} vakit… Sayıyı görünce gözlüğümü sildim, yanlış görmüyormuşum.',
+    '{x} vakit kaçmış yavrum. Kazaları biriktirme, faizi ağır.',
+    'Bugün {x} vakit eksik. Yarın bu sayıyı sıfır görmek istiyorum.',
+    '{x} vakti kaçırdın. Mazeretini duymak bile istemiyorum.',
+    '{x} vakit kaza. Senin yerine ben mahcup oldum.'
+  ],
+  lagWater: [
+    'Günde {x} litreyle mi yaşıyorsun? Deve misin evladım?',
+    '{x} litre… Bu suyla çiçek bile sulanmaz.',
+    'Akşam oldu, daha {x} litre. Kuruyorsun, farkında mısın?',
+    '{x} litre su içmişsin. Kaktüs bile daha çok içer.',
+    'Bugün toplam {x} litre. Rakamı söyleyince ben susadım.',
+    '{x} litre mi? Çay bardağıyla mı ölçtün?',
+    'Hedefin yarısı bile yok, {x} litre. Hadi kalk bir bardak.',
+    '{x} litre… Yarın başın ağrırsa benden söylemesi.',
+    'Su karnesi: {x} litre. Sınıfta kaldın.',
+    '{x} litre su, bir sürü bahane. Hangisi daha çok?',
+    'Bu sıcakta {x} litre ha? Kuru fasulye gibi kuruyacaksın.',
+    '{x} litreyle günü kapatmayı düşünüyorsan hiç düşünme.',
+    'Bugün {x} litre. Musluk sana küsmüş olabilir.',
+    '{x} litre içmişsin. Böbreklerin grev hazırlığında.',
+    'Daha {x} litre. Bardağı doldur, ben bekliyorum.',
+    '{x} litre… Balık olsan çoktan kurumuştun.',
+    'Günün bitmesine az kaldı, sen {x} litrede kaldın.',
+    '{x} litre suyla dağlar aşılmaz evladım.',
+    'Bugün {x} litre. Suyu parayla mı alıyorsun, bu ne cimrilik?',
+    '{x} litre ha? Yarın bu rakamı ikiye katlarsan konuşuruz.'
+  ],
+  lagSport: [
+    'Bugün sıfır dakika spor. Sıfır. Rakamla yazayım: 0.',
+    'Hareket etmeyen bir sen varsın, bir de şu duvar.',
+    'Bugün spor yok. Koltuk artık senin şeklini aldı.',
+    'Kaslar bugün de izinli galiba. Yıllık izinleri bitmedi mi?',
+    'Spor defteri bugün de boş. Kalem mi yok, niyet mi?',
+    'Bugün attığın adımlar parmakla sayılır.',
+    'Göbek bugün de rahat. Senin sayende.',
+    'Spor yapmadın. Yarın yaparsın herhalde, dün de öyle demiştin.',
+    'Sıfır dakika. Ben senin yaşında bahçe bellerdim.',
+    'Bugün terlemedin, biliyorum. Buradan anlaşılıyor.',
+    'Spor ayakkabıların tozlanıyor. Vitrinde mi duruyorlar?',
+    'Bugün hareket etmedin. Vücudun sana küstü, barıştırması zor.',
+    'Spor yok, bahane çok. Hangisini dinleyeyim?',
+    'On dakika yürüsen olmaz mıydı? Olurdu. Olmadı.',
+    'Bugün spor günü değil miydi? Aslında her gün spor günü.',
+    'Kalkıp bir esnesen bile gönlüm olurdu. O da yok.',
+    'Sporsuz bir gün daha. Dizlerin yaşlanırken beni hatırla.',
+    'Bugün kanepeyle aranız çok iyi, görüyorum.',
+    'Hareket bereket getirir. Bugün ne hareket var ne bereket.',
+    'Akşam yemeğinden sonra bir tur at bari, yoksa bugün de sıfır.'
+  ],
+  allDone: [
+    'Bugün her şey tamam. Bunu çerçeveletip duvara asacağım.',
+    'Kusursuz bir gün. Kimseye söyleme, şımarırsın.',
+    'Beş vakit, su, spor… Bugün seninle gurur duydum.',
+    'Tamamdır. Bugün göğsümü gere gere dolaşacağım.',
+    'Her şey yerli yerinde. Böyle günü zor görürüm, tadını çıkar.',
+    'Bugün eksiğin yok. Söyleyecek bir şey bulamadım, şaşırdım.',
+    'Maşallah. Bugün yüzüm hiç düşmedi.',
+    'Tam not. Karne olsa buzdolabına asardım.',
+    'Her şey tamam. Bu gece rahat uyu, hak ettin.',
+    'Bugün mükemmeldin. Yarın da böyle olursa bir tatlı ısmarlarım.',
+    'Namaz tamam, su tamam, spor tamam. Ben de tamamım.',
+    'Bugün laf sokacak bir şey bulamadım. Çok üzgünüm. Şaka şaka.',
+    'İşte beklediğim gün buydu. Arkası gelsin.',
+    'Bugün seninle gurur duymak için sebep aramadım bile.',
+    'Tebrikler. Bunu mahallede anlatsam kimse inanmaz.',
+    'Eksiksiz bir gün. Kendine bir aferin de sen de.',
+    'Bugün her şey yolunda. Gözlüğümü çıkarıp bir daha baktım, doğru.',
+    'Böyle giderse benim işim kalmayacak. Hiç de şikayetçi değilim.',
+    'Tam kıvamında bir gün. Allah devam ettirsin.',
+    'Bugünü yıldızla işaretliyorum. Yarın da bekliyorum.'
+  ]
 };
+// gun numarasi (yerel takvim gunu, saat diliminden bagimsiz)
+const serial = dk => { const [y, m, d] = dk.split('-').map(Number); return Math.round(Date.UTC(y, m - 1, d) / 864e5); };
+const mod = (a, n) => ((a % n) + n) % n;
+// ayni yuva her gun havuzda bir sonraki cumleye gecer
+function rot(arr, dk, slot = 0, slots = 1) { return arr[mod(serial(dk) * slots + slot, arr.length)]; }
+// iki parcali cumle: ardisik A.length*B.length gunde hic tekrar etmez
+function combo(pair, dk, slot = 0, slots = 1) {
+  const [A, B] = pair, k = serial(dk) * slots + slot;
+  return A[mod(k, A.length)] + ' ' + B[mod(Math.floor(k / A.length), B.length)];
+}
+const PIDX = { sabah: 0, ogle: 1, ikindi: 2, aksam: 3, yatsi: 4 };
+function react(type, yes, dk, id) {
+  const slot = type === 'p' ? PIDX[id.slice(2)] || 0 : id.endsWith('2') ? 1 : 0;
+  return combo(L.react[type][yes ? 'yes' : 'no'], dk, slot, type === 'p' ? 5 : 2);
+}
+const startLine = (dk, k, n) => combo(L.pStart, dk, PIDX[k], 5).replace(/\{n\}/g, n);
 // ayni gun ayni soruya hep ayni cumle, gunden gune degissin
 function pick(arr, seed) { let h = 0; for (const c of String(seed)) h = (h * 31 + c.charCodeAt(0)) | 0; return arr[Math.abs(h) % arr.length]; }
 const fill = (s, n) => s.replace('{n}', n);
@@ -361,10 +652,10 @@ function asksFor(dk) {
   if (s.n.ask && t) for (const p of P) {
     const ts = p.end ? at(dk, t[p.end]) : at(dk, s.yatsiAsk);
     out.push({ id: 'p:' + p.k, type: 'p', k: p.k, ts, dk,
-      q: p.k === 'yatsi' ? pick(L.yAsk, dk) : fill(pick(L.pAsk, dk + p.k), p.n) });
+      q: rot(L.ask[p.k], dk) });
   }
-  if (s.n.askWater) [s.waterAsk1, s.waterAsk2].forEach((hm, i) => out.push({ id: 'w' + (i + 1), type: 'w', ts: at(dk, hm), dk, q: pick(L.wAsk, dk + 'w' + i) }));
-  if (s.n.askSport) [s.sportAsk1, s.sportAsk2].forEach((hm, i) => out.push({ id: 's' + (i + 1), type: 's', ts: at(dk, hm), dk, q: pick(L.sAsk, dk + 's' + i) }));
+  if (s.n.askWater) [s.waterAsk1, s.waterAsk2].forEach((hm, i) => out.push({ id: 'w' + (i + 1), type: 'w', ts: at(dk, hm), dk, q: rot(L.wAsk, dk, i, 2) }));
+  if (s.n.askSport) [s.sportAsk1, s.sportAsk2].forEach((hm, i) => out.push({ id: 's' + (i + 1), type: 's', ts: at(dk, hm), dk, q: rot(L.sAsk, dk, i, 2) }));
   return out.sort((a, b) => a.ts - b.ts);
 }
 function answered(a) {
@@ -380,18 +671,21 @@ function pendingAsks() {
   return list.filter(a => a.ts <= now && !answered(a));
 }
 let babaSays = null;   // { text, mood } — cevaptan sonraki tepki
-function answer(dk, id, yes) {
-  const d = day(dk);
+const ASK_OPTS = {
+  p: [['Kıldım', 1], ['Kılamadım', 0]],
+  w: [['1 bardak', 1], ['2', 2], ['3', 3], ['4+', 4], ['İçmedim', 0]],
+  s: [['15 dk', 15], ['30 dk', 30], ['45+ dk', 45], ['Yapmadım', 0]]
+};
+// val: namazda 1/0, suda bardak sayisi, sporda dakika (ntfy'den gelen 1 = hedef kadar)
+function answer(dk, id, val) {
+  val = Number(val) || 0;
+  const d = day(dk), type = id[0], yes = val > 0;
   d.ask = d.ask || {};
   d.ask[id] = yes;
-  const type = id[0];
-  if (type === 'p') { const k = id.slice(2); d.p[k] = yes; babaSays = { text: pick(yes ? L.pYes : L.pNo, dk + id), mood: yes ? 'happy' : 'sad' }; }
-  if (type === 'w') babaSays = { text: pick(yes ? L.wYes : L.wNo, dk + id), mood: yes ? 'happy' : 'sad' };
-  if (type === 's') {
-    d.sport = d.sport || { min: 0, type: '' };
-    if (yes && !d.sport.min) d.sport.min = S.settings.sportGoal;
-    babaSays = { text: pick(yes ? L.sYes : L.sNo, dk + id), mood: yes ? 'happy' : 'sad' };
-  }
+  if (type === 'p') d.p[id.slice(2)] = yes;
+  if (type === 'w') d.water += val * S.settings.glass;
+  if (type === 's') { d.sport = d.sport || { min: 0, type: '' }; d.sport.min = Math.max(d.sport.min || 0, val === 1 ? S.settings.sportGoal : val); }
+  babaSays = { text: react(type, yes, dk, id), mood: yes ? 'happy' : 'sad' };
   save();
 }
 function babaCard() {
@@ -400,18 +694,16 @@ function babaCard() {
   if (babaSays) { text = babaSays.text; mood = babaSays.mood; }
   else if (q) {
     text = q.q;
-    const yes = q.type === 'p' ? 'Kıldım' : q.type === 'w' ? 'İçtim' : 'Yaptım';
-    const no = q.type === 'p' ? 'Kılamadım' : q.type === 'w' ? 'İçmedim' : 'Yapmadım';
-    btns = `<div class="row"><button class="btn primary" data-act="ans" data-d="${q.dk}" data-id="${q.id}" data-v="1">${yes}</button><button class="btn" data-act="ans" data-d="${q.dk}" data-id="${q.id}" data-v="0">${no}</button></div>`;
+    btns = `<div class="row">${ASK_OPTS[q.type].map(([label, v]) => `<button class="btn ${v ? 'primary' : ''}" data-act="ans" data-d="${q.dk}" data-id="${q.id}" data-v="${v}">${label}</button>`).join('')}</div>`;
   } else {
     const d = peek(tk) || { p: {}, water: 0, sport: { min: 0 } }, now = Date.now(), h = new Date().getHours(), t = timesFor(tk);
     const missed = t ? P.filter(p => p.end && at(tk, t[p.end]) <= now && !d.p[p.k]).length : 0;
     const done = P.every(p => d.p[p.k]) && d.water >= st.waterGoal && d.sport && d.sport.min;
-    if (done) { text = pick(L.allDone, tk); mood = 'happy'; }
-    else if (missed) { text = pick(L.lagPray, tk + missed).replace('{x}', missed); mood = 'sad'; }
-    else if (h >= 18 && d.water < st.waterGoal / 2) { text = pick(L.lagWater, tk).replace('{x}', liters(d.water)); mood = 'sad'; }
-    else if (now >= at(tk, st.sportAsk2) && !(d.sport && d.sport.min)) { text = pick(L.lagSport, tk); mood = 'sad'; }
-    else text = pick(L.hello[h < 5 ? 'gece' : h < 11 ? 'sabah' : h < 17 ? 'ogle' : 'aksam'], tk);
+    if (done) { text = rot(L.allDone, tk); mood = 'happy'; }
+    else if (missed) { text = rot(L.lagPray, tk).replace('{x}', missed); mood = 'sad'; }
+    else if (h >= 18 && d.water < st.waterGoal / 2) { text = rot(L.lagWater, tk).replace('{x}', liters(d.water)); mood = 'sad'; }
+    else if (now >= at(tk, st.sportAsk2) && !(d.sport && d.sport.min)) { text = rot(L.lagSport, tk); mood = 'sad'; }
+    else text = combo(L.hello[h < 5 ? 'gece' : h < 11 ? 'sabah' : h < 17 ? 'ogle' : 'aksam'], tk);
   }
   return `<section class="baba ${mood}"><div class="face">${babaSVG(mood)}</div>
     <div class="bubble"><p>${esc(text)}</p>${btns}</div></section>`;
@@ -528,7 +820,7 @@ function buildEvents() {
         if (s.n.start) out.push({
           id: `start-${dk}-${p.k}`, ts: start, tags: ['mosque'], priority: 4,
           title: `${p.n} vakti · ${t[p.k]}`,
-          message: fill(pick(L.pStart, dk + p.k), p.n) + (endName ? ` (${endName} ${t[p.end]})` : '')
+          message: startLine(dk, p.k, p.n) + (endName ? ` (${endName} ${t[p.end]})` : '')
         });
         const late = endTs - s.lateMin * 60e3;
         // namazi zaten isaretlediysen "cikiyor" uyarisi da gelmesin
@@ -635,16 +927,10 @@ async function syncNtfy() {
 /* ---------- Android uygulamasi: yerel alarm + ekran ortasinda soru ---------- */
 const NATIVE_DAYS = 32;
 function nativeAsk(a) {
-  const OPTS = {
-    p: [['Kıldım', 1], ['Kılamadım', 0]],
-    w: [['1 bardak', 1], ['2', 2], ['3', 3], ['4+', 4], ['İçmedim', 0]],
-    s: [['15 dk', 15], ['30 dk', 30], ['45+ dk', 45], ['Yapmadım', 0]]
-  };
-  const Y = { p: L.pYes, w: L.wYes, s: L.sYes }, N = { p: L.pNo, w: L.wNo, s: L.sNo };
   return { kind: 'ask', id: a.id, dk: a.dk, type: a.type, key: a.k || '', ts: a.ts,
     title: a.type === 'p' ? (a.k === 'yatsi' ? 'Yatsı' : `${NAME[a.k]} vakti çıktı`) : a.type === 'w' ? 'Su' : 'Spor',
-    q: a.q, yes: pick(Y[a.type], a.dk + a.id + 'y'), no: pick(N[a.type], a.dk + a.id + 'n'),
-    opts: OPTS[a.type], glass: S.settings.glass };
+    q: a.q, yes: react(a.type, true, a.dk, a.id), no: react(a.type, false, a.dk, a.id),
+    opts: ASK_OPTS[a.type], glass: S.settings.glass };
 }
 function buildNativeEvents() {
   const s = S.settings, now = Date.now(), out = [];
@@ -656,7 +942,7 @@ function buildNativeEvents() {
       for (const p of P) {
         const start = at(dk, t[p.k]), endName = p.end ? NAME[p.end] : null;
         if (s.n.start) out.push({ kind: 'note', id: `start-${p.k}`, dk, ts: start, title: `${p.n} vakti · ${t[p.k]}`,
-          text: fill(pick(L.pStart, dk + p.k), p.n) + (endName ? ` (${endName} ${t[p.end]})` : '') });
+          text: startLine(dk, p.k, p.n) + (endName ? ` (${endName} ${t[p.end]})` : '') });
         const late = (p.end ? at(dk, t[p.end]) : at(dk, '23:30')) - s.lateMin * 60e3;
         if (s.n.late && late > start + 10 * 60e3 && !(peek(dk) && peek(dk).p[p.k])) out.push({ kind: 'note', id: `late-${p.k}`, dk, ts: late,
           title: `${p.n} vaktinin çıkmasına ${s.lateMin} dk`, text: endName ? `Kılmadıysan şimdi kıl. ${endName} ${t[p.end]} saatinde.` : 'Kılmadıysan yatmadan önce kıl.' });
@@ -722,7 +1008,8 @@ function nativeCard() {
     ${row(st.exact, 'Tam saatinde sorsun', 'perm-exact', 'İzin ver')}
     ${row(st.battery, 'Pil tasarrufu susturmasın', 'perm-battery', 'Ayarla')}
     <p class="note">${next ? `Sıradaki: ${next}. Önümüzdeki ${NATIVE_DAYS} gün kurulu; internet gerekmez.` : 'Henüz kurulu soru yok.'}</p>
-    <div class="row"><button class="btn" data-act="try" data-t="w">Su sorusunu şimdi göster</button><button class="btn" data-act="try" data-t="p">Namaz sorusunu göster</button></div>
+    <div class="sub-h">Soruyu şimdi göster</div>
+    <div class="row"><button class="btn" data-act="try" data-t="w">Su</button><button class="btn" data-act="try" data-t="s">Spor</button><button class="btn" data-act="try" data-t="p">Namaz</button></div>
   </section>`;
 }
 
@@ -937,7 +1224,7 @@ document.addEventListener('click', async e => {
   const tk = todayKey();
   if (act === 'tab') { TAB = b.dataset.tab; render(); scrollTo(0, 0); return; }
   if (act === 'ans') {
-    answer(b.dataset.d, b.dataset.id, b.dataset.v === '1');
+    answer(b.dataset.d, b.dataset.id, Number(b.dataset.v));
     render(); scrollTo(0, 0); syncNtfy();
     clearTimeout(babaT); babaT = setTimeout(() => { babaSays = null; if (TAB === 'bugun') render(); }, 7000);
     return;
@@ -989,8 +1276,10 @@ document.addEventListener('click', async e => {
   }
   if (act === 'try') {
     const type = b.dataset.t, tk = todayKey();
-    const a = type === 'w' ? { id: 'w1', type: 'w', dk: tk, ts: Date.now(), q: pick(L.wAsk, Date.now()) }
-      : { id: 'p:ogle', type: 'p', k: 'ogle', dk: tk, ts: Date.now(), q: fill(pick(L.pAsk, Date.now()), 'Öğle') };
+    const r = String(Date.now());
+    const a = type === 'w' ? { id: 'w1', type: 'w', dk: tk, ts: Date.now(), q: pick(L.wAsk, r) }
+      : type === 's' ? { id: 's1', type: 's', dk: tk, ts: Date.now(), q: pick(L.sAsk, r) }
+      : { id: 'p:ogle', type: 'p', k: 'ogle', dk: tk, ts: Date.now(), q: pick(L.ask.ogle, r) };
     try { window.VakitApp.testAsk(JSON.stringify(nativeAsk(a))); } catch (x) {}
     return;
   }
@@ -1042,7 +1331,7 @@ setInterval(tick, 20000);
 
 (function fromNotification() {
   const m = /^(\d{4}-\d{2}-\d{2})~(p:(?:sabah|ogle|ikindi|aksam|yatsi)|w[12]|s[12])~([01])$/.exec(new URLSearchParams(location.search).get('c') || '');
-  if (m) { answer(m[1], m[2], m[3] === '1'); babaT = setTimeout(() => { babaSays = null; if (TAB === 'bugun') render(); }, 9000); }
+  if (m) { answer(m[1], m[2], Number(m[3])); babaT = setTimeout(() => { babaSays = null; if (TAB === 'bugun') render(); }, 9000); }
   if (location.search) history.replaceState(null, '', location.pathname);
 })();
 applyNative();
