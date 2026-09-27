@@ -501,12 +501,15 @@ function vakitState(now = Date.now()) {
 }
 
 /* ---------- ntfy hatirlatmalari ---------- */
+/* ntfy'ye kurulacak bildirimler. Her birinin sabit bir kimligi (sequence_id) var:
+   boylece sonradan silinebiliyor. ntfy en fazla 3 gun ileriye kurmaya izin veriyor. */
+const HORIZON = 71 * 3600e3;
 function buildEvents() {
-  const s = S.settings, now = Date.now(), horizon = now + 47 * 3600e3, out = [];
+  const s = S.settings, now = Date.now(), horizon = now + HORIZON, out = [];
   const app = location.origin + location.pathname;
   const LBL = { p: ['Kıldım', 'Kılamadım'], w: ['İçtim', 'İçmedim'], s: ['Yaptım', 'Yapmadım'] };
   const TAG = { p: 'mosque', w: 'droplet', s: 'muscle' };
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 4; i++) {
     const d = addDays(new Date(), i), dk = dkey(d), t = timesFor(dk);
     if (t) {
       for (const p of P) {
@@ -514,13 +517,14 @@ function buildEvents() {
         const endTs = p.end ? at(dk, t[p.end]) : at(dk, '23:30');
         const endName = p.end ? NAME[p.end] : null;
         if (s.n.start) out.push({
-          id: `start|${p.k}|${start}`, ts: start, tags: ['mosque'], priority: 4,
+          id: `start-${dk}-${p.k}`, ts: start, tags: ['mosque'], priority: 4,
           title: `${p.n} vakti · ${t[p.k]}`,
           message: fill(pick(L.pStart, dk + p.k), p.n) + (endName ? ` (${endName} ${t[p.end]})` : '')
         });
         const late = endTs - s.lateMin * 60e3;
-        if (s.n.late && late > start + 10 * 60e3) out.push({
-          id: `late|${p.k}|${late}`, ts: late, tags: ['hourglass_flowing_sand'], priority: 4,
+        // namazi zaten isaretlediysen "cikiyor" uyarisi da gelmesin
+        if (s.n.late && late > start + 10 * 60e3 && !(peek(dk) && peek(dk).p[p.k])) out.push({
+          id: `late-${dk}-${p.k}`, ts: late, tags: ['hourglass_flowing_sand'], priority: 4,
           title: `${p.n} vaktinin çıkmasına ${s.lateMin} dk`,
           message: endName ? `Kılmadıysan şimdi kıl. ${endName} ${t[p.end]} saatinde.` : 'Kılmadıysan yatmadan önce kıl.'
         });
@@ -529,58 +533,104 @@ function buildEvents() {
     if (s.n.water) {
       const every = Math.max(30, Number(s.waterEvery) || 120);
       for (let m = toMin(s.waterFrom); m <= toMin(s.waterTo); m += every) {
-        const ts = at(dk, `${pad(Math.floor(m / 60))}:${pad(m % 60)}`);
-        out.push({ id: `water|${ts}`, ts, tags: ['droplet'], priority: 3,
-          title: 'Su içme vakti',
-          message: `Bir bardak (${s.glass} ml) iç. Günlük hedef ${liters(s.waterGoal)} L.` });
+        const hm = `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+        out.push({ id: `water-${dk}-${hm.replace(':', '')}`, ts: at(dk, hm), tags: ['droplet'], priority: 3,
+          title: 'Su içme vakti', message: `Bir bardak (${s.glass} ml) iç. Günlük hedef ${liters(s.waterGoal)} L.` });
       }
     }
     if (s.n.sport && s.sportDays.includes(d.getDay())) {
-      const ts = at(dk, s.sportTime);
-      out.push({ id: `sport|${ts}`, ts, tags: ['muscle'], priority: 4,
+      out.push({ id: `sport-${dk}`, ts: at(dk, s.sportTime), tags: ['muscle'], priority: 4,
         title: 'Spor zamanı', message: `Bugünkü hedef: ${s.sportGoal} dakika. Bitince uygulamada işaretle.` });
     }
     for (const a of asksFor(dk)) {
+      if (answered(a)) continue;           // onceden isaretlediysen sormaz
       const u = v => `${app}?c=${a.dk}~${a.id}~${v}`;
-      out.push({ id: `ask|${a.id}|${a.ts}`, ts: a.ts, tags: [TAG[a.type]], priority: 4,
+      out.push({ id: `ask-${dk}-${a.id.replace(':', '-')}`, ts: a.ts, tags: [TAG[a.type]], priority: 4,
         title: a.type === 'p' ? (a.k === 'yatsi' ? 'Yatsı' : `${NAME[a.k]} vakti çıktı`) : a.type === 'w' ? 'Su' : 'Spor', message: a.q, click: app,
         actions: [{ action: 'view', label: LBL[a.type][0], url: u(1), clear: true }, { action: 'view', label: LBL[a.type][1], url: u(0), clear: true }] });
     }
     if (s.n.summary) {
-      const ts = at(dk, s.summaryTime);
-      out.push({ id: `sum|${ts}`, ts, tags: ['crescent_moon'], priority: 3,
-        title: 'Günü kapat', message: 'Namaz, su ve sporu işaretledin mi? Vakit\'i açıp bak.' });
+      out.push({ id: `sum-${dk}`, ts: at(dk, s.summaryTime), tags: ['crescent_moon'], priority: 3,
+        title: 'Günü kapat', message: 'Namaz, su ve sporu işaretledin mi? Uygulamayı açıp bak.' });
     }
   }
-  return out.filter(e => e.ts > now + 60e3 && e.ts < horizon).sort((a, b) => a.ts - b.ts);
+  const list = out.filter(e => e.ts > now + 60e3 && e.ts < horizon).sort((a, b) => a.ts - b.ts);
+  // son kurulan bildirimden hemen sonra: "bitiyorum, bana dokun"
+  if (list.length) {
+    // penceredeki son uygun aksam 20:00 (gece yarisi uyandirmasin)
+    const c = new Date(now + HORIZON - 60e3);
+    if (c.getHours() < 20) c.setDate(c.getDate() - 1);
+    c.setHours(20, 0, 0, 0);
+    if (c.getTime() > now + 60e3) list.push({ id: 'yenile', ts: c.getTime(), tags: ['warning'], priority: 5, click: app,
+      title: 'Bildirimler bitiyor',
+      message: '3 gündür yüzüme bakmadın. Bir dokun, yoksa bundan sonra susarım. Sonra "kimse hatırlatmadı" deme.' });
+  }
+  return list;
 }
 
 async function ntfyPost(body) {
   return fetch('https://ntfy.sh', { method: 'POST', body: JSON.stringify(Object.assign({ topic: S.settings.topic }, body)) });
 }
-let syncing = false;
+async function ntfyDelete(id) {
+  // not: GET .../delete zamanlanmis mesaji iptal etmiyor (denendi), DELETE ediyor
+  const r = await fetch(`https://ntfy.sh/${encodeURIComponent(S.settings.topic)}/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  return r.ok || r.status === 404;
+}
+function evHash(e) { let h = 0; for (const c of JSON.stringify([e.ts, e.title, e.message, e.priority, e.actions])) h = (h * 31 + c.charCodeAt(0)) | 0; return h; }
+// v2 surumunde kimliksiz kurulanlar silinemez; ayni yuvayi tekrar kurmamak icin eslestir
+function legacySeq(id, ts) {
+  const [kind, a] = id.split('|'), dk = dkey(new Date(ts)), hm = hmOf(ts).replace(':', '');
+  return { start: `start-${dk}-${a}`, late: `late-${dk}-${a}`, water: `water-${dk}-${hm}`, sport: `sport-${dk}`, sum: `sum-${dk}`, ask: `ask-${dk}-${String(a).replace(':', '-')}` }[kind];
+}
+
+let syncing = false, syncAgain = false;
 async function syncNtfy() {
-  if (!S.settings.ntfyOn || syncing) return;
+  // kapatildiysa ve silinmemis kalan varsa (ntfy siniri vb.) silmeye devam et
+  if (!S.settings.ntfyOn) { if (Object.values(S.sent).some(v => typeof v === 'object' && !v.legacy && v.ts > Date.now())) clearNtfy(); return; }
+  if (syncing) { syncAgain = true; return; }
   if (!navigator.onLine) return;
   syncing = true;
   const now = Date.now();
-  for (const [id, ts] of Object.entries(S.sent)) if (ts < now) delete S.sent[id];
-  const todo = buildEvents().filter(e => !S.sent[e.id]);
+  for (const [id, v] of Object.entries(S.sent)) {
+    if (typeof v === 'number') { delete S.sent[id]; if (v > now && id.includes('|')) { const k = legacySeq(id, v); if (k) S.sent[k] = { ts: v, legacy: true }; } }
+    else if (v.ts < now) delete S.sent[id];
+  }
+  const want = buildEvents(), wantIds = new Set(want.map(e => e.id));
   let ok = 0, err = '';
-  for (const e of todo) {
-    try {
+  try {
+    // artik istenmeyenleri (kapatilan, onceden cevaplanan) sil
+    for (const [id, v] of Object.entries(S.sent)) {
+      if (wantIds.has(id) || v.legacy) continue;
+      if (await ntfyDelete(id)) { delete S.sent[id]; save(); }
+    }
+    for (const e of want) {
+      const h = evHash(e), have = S.sent[e.id];
+      if (have && (have.h === h || have.legacy)) continue;
+      if (have && !(await ntfyDelete(e.id))) continue;   // degisti: once eskisini sil
       const r = await ntfyPost({ title: e.title, message: e.message, tags: e.tags, priority: e.priority, delay: String(Math.floor(e.ts / 1000)),
-        icon: new URL('baba.png', location.href).href, click: e.click || location.origin + location.pathname, actions: e.actions });
+        sequence_id: e.id, icon: new URL('baba.png', location.href).href, click: e.click || location.origin + location.pathname, actions: e.actions });
       if (r.status === 429) { err = 'ntfy sınırına takıldı, kalanlar sonra kurulacak'; break; }
       if (!r.ok) { err = 'ntfy ' + r.status + ' döndü'; continue; }
-      S.sent[e.id] = e.ts; ok++; save();
-    } catch (x) { err = 'ntfy\'ye ulaşılamadı'; break; }
-    await new Promise(r => setTimeout(r, 200));
-  }
+      S.sent[e.id] = { ts: e.ts, h }; ok++; save();
+      await new Promise(r => setTimeout(r, 150));
+    }
+  } catch (x) { err = 'ntfy\'ye ulaşılamadı'; }
   S.lastSync = Date.now(); S.syncErr = err;
   if (ok) S.lastSyncCount = ok;
   save(); syncing = false;
   if (TAB === 'ayarlar') render();
+  if (syncAgain) { syncAgain = false; syncNtfy(); }
+}
+// kapatilinca: kurulu olanlarin hepsini sil
+let clearing = false;
+async function clearNtfy() {
+  if (clearing) return;
+  clearing = true;
+  for (const [id, v] of Object.entries(S.sent)) {
+    if (typeof v !== 'object' || v.legacy || v.ts < Date.now()) { if (typeof v !== 'object' || v.ts < Date.now()) delete S.sent[id]; continue; }
+    try { if (!(await ntfyDelete(id))) break; delete S.sent[id]; save(); } catch (x) { break; }  // kalanlar sonraki acilista
+  }
+  save(); clearing = false;
 }
 
 /* ---------- yardimcilar ---------- */
@@ -700,7 +750,7 @@ function viewSettings() {
   <section class="card">
     <div class="card-h"><h2>Telefona bildirim</h2></div>
     <div class="status ${on ? (S.syncErr ? 'err' : 'on') : ''}"><i></i>${on ? (S.syncErr ? esc(S.syncErr) : `Açık · ${pending} hatırlatma kurulu`) : 'Kapalı'}</div>
-    ${on && last ? `<p class="note">Son eşitleme ${last}. Uygulamayı 2 günde bir açman yeterli; her açılışta önümüzdeki 2 günün hatırlatmaları kurulur.</p>` : ''}
+    ${on && last ? `<p class="note">Son eşitleme ${last}. Uygulamayı her açtığında ya da bir bildirime dokunduğunda önümüzdeki 3 günün bildirimleri yeniden kurulur. 3 gün hiç dokunmazsan son bir uyarı gelir.</p>` : ''}
     <ol class="steps">
       <li><a href="https://play.google.com/store/apps/details?id=io.heckel.ntfy" target="_blank" rel="noopener">ntfy uygulamasını Play Store'dan indir</a> (ücretsiz).</li>
       <li>ntfy'de <b>+</b> tuşuna bas ve bu kanal adını yaz:</li>
@@ -713,7 +763,7 @@ function viewSettings() {
       <button class="btn" data-act="test">Test bildirimi gönder</button>
       <button class="btn ${on ? '' : 'primary'}" data-act="ntfy">${on ? 'Hatırlatmaları kapat' : 'Hatırlatmaları aç'}</button>
     </div>
-    <p class="note">Kanal adı senin şifren gibidir; bilen herkes bildirimlerini görebilir. Kurulan hatırlatmalar geri çekilemez, ayar değişiklikleri en geç 2 gün içinde tamamen yerleşir.</p>
+    <p class="note">Kanal adı senin şifren gibidir; bilen herkes bildirimlerini görebilir. Ayar değiştirince kurulu bildirimler hemen güncellenir.</p>
   </section>
   <section class="card">
     <div class="card-h"><h2>Neler hatırlatılsın?</h2></div>
@@ -782,7 +832,7 @@ document.addEventListener('click', async e => {
   if (act === 'tab') { TAB = b.dataset.tab; render(); scrollTo(0, 0); return; }
   if (act === 'ans') {
     answer(b.dataset.d, b.dataset.id, b.dataset.v === '1');
-    render(); scrollTo(0, 0);
+    render(); scrollTo(0, 0); syncNtfy();
     clearTimeout(babaT); babaT = setTimeout(() => { babaSays = null; if (TAB === 'bugun') render(); }, 7000);
     return;
   }
@@ -791,6 +841,7 @@ document.addEventListener('click', async e => {
     d.p[k] = !d.p[k];
     save(); render();
     if (d.p[k]) toast(allFive(b.dataset.d) ? 'Beş vakit tamam, Allah kabul etsin.' : `${NAME[k]} işaretlendi`);
+    syncNtfy();
     return;
   }
   if (act === 'water') { const d = day(tk); d.water = Math.max(0, d.water + Number(b.dataset.ml)); save(); render(); if (d.water >= S.settings.waterGoal && Number(b.dataset.ml) > 0) toast('Günlük su hedefi tamam'); return; }
@@ -822,7 +873,7 @@ document.addEventListener('click', async e => {
   if (act === 'ntfy') {
     S.settings.ntfyOn = !S.settings.ntfyOn; save(); render();
     if (S.settings.ntfyOn) { toast('Hatırlatmalar kuruluyor…'); await ensureTimes(); await syncNtfy(); toast(S.syncErr || 'Hatırlatmalar kuruldu'); }
-    else toast('Yeni hatırlatma kurulmayacak');
+    else { toast('Hatırlatmalar siliniyor…'); await clearNtfy(); toast('Hatırlatmalar kapatıldı'); render(); }
     return;
   }
   if (act === 'export') {
