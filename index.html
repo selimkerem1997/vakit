@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vakit</title>
+<meta name="description" content="Namaz, su ve spor rutini takibi; ntfy ile hatırlatma.">
+<meta name="theme-color" content="#1F5A46">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF1EC; --surface:#FFFFFF; --surface-2:#F4F7F2; --ink:#15201B; --muted:#5A675F; --line:#D8DFD5;
+  --accent:#1F5A46; --accent-ink:#FFFFFF;
+  --prayer:#8E6D22; --prayer-soft:#F4EDDC;
+  --water:#2870A0; --water-soft:#E0EDF6;
+  --sport:#B44E26; --sport-soft:#F7E5DC;
+  --warn:#A83D27;
+  --display:"Fraunces", Georgia, "Times New Roman", serif;
+  --body:"Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1311; --surface:#151D1A; --surface-2:#1B2521; --ink:#E6EDE8; --muted:#93A199; --line:#28332F;
+    --accent:#6CC29F; --accent-ink:#0D1311;
+    --prayer:#D8B569; --prayer-soft:#29251A;
+    --water:#66B4E0; --water-soft:#15283A;
+    --sport:#EC8962; --sport-soft:#33211A;
+    --warn:#F08A72;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1311; --surface:#151D1A; --surface-2:#1B2521; --ink:#E6EDE8; --muted:#93A199; --line:#28332F;
+  --accent:#6CC29F; --accent-ink:#0D1311;
+  --prayer:#D8B569; --prayer-soft:#29251A;
+  --water:#66B4E0; --water-soft:#15283A;
+  --sport:#EC8962; --sport-soft:#33211A;
+  --warn:#F08A72;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg); color:var(--ink); font:15px/1.45 var(--body); -webkit-tap-highlight-color:transparent}
+button,input,select{font:inherit; color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.wrap{max-width:520px; margin:0 auto; padding-inline:16px; padding-block:calc(env(safe-area-inset-top,0px) + 18px) calc(env(safe-area-inset-bottom,0px) + 104px); display:flex; flex-direction:column; gap:14px}
+
+/* ust bilgi */
+.top{display:flex; justify-content:space-between; align-items:baseline; gap:12px}
+.brand{font-family:var(--display); font-weight:600; font-size:22px; letter-spacing:-.01em}
+.dates{text-align:right; color:var(--muted); font-size:13px; line-height:1.3}
+.dates b{color:var(--ink); font-weight:600; display:block}
+
+/* sonraki vakit */
+.hero{padding:6px 2px 4px; display:flex; flex-direction:column; gap:4px}
+.hero .lbl{font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:600}
+.hero .count{font-family:var(--display); font-weight:500; font-size:52px; line-height:1; letter-spacing:-.02em}
+.hero .count small{font-family:var(--body); font-size:17px; color:var(--muted); font-weight:500; margin:0 10px 0 3px; letter-spacing:0}
+.hero .sub{color:var(--muted)}
+.nudge{display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--prayer-soft); border-radius:12px; padding:10px 12px; margin-top:8px}
+.nudge span{font-weight:500}
+.nudge button{border:0; background:var(--prayer); color:var(--surface); font-weight:600; border-radius:999px; padding:7px 14px; white-space:nowrap}
+
+/* kartlar */
+.card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px 14px 16px; display:flex; flex-direction:column; gap:12px}
+.card-h{display:flex; justify-content:space-between; align-items:baseline; gap:8px}
+.card-h h2{margin:0; font-family:var(--display); font-weight:600; font-size:19px}
+.card-h .meta{color:var(--muted); font-size:13px}
+.info{color:var(--muted); font-size:13px}
+
+/* namaz satirlari */
+.plist{display:flex; flex-direction:column; gap:6px}
+.prow{display:grid; grid-template-columns:1fr auto auto; align-items:center; gap:12px; width:100%; text-align:left; border:1px solid transparent; background:var(--surface-2); border-radius:12px; padding:10px 10px 10px 14px}
+.prow .pn{font-weight:600; font-size:16px; display:flex; align-items:center; gap:8px}
+.prow .pt{color:var(--muted); font-size:15px}
+.prow.now{border-color:var(--prayer); background:var(--prayer-soft)}
+.pill{font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--prayer); border:1px solid currentColor; border-radius:999px; padding:1px 7px}
+.tick{width:34px; height:34px; border-radius:50%; border:2px solid var(--line); display:grid; place-items:center; color:transparent; transition:background .15s, border-color .15s}
+.prow.done .tick{background:var(--prayer); border-color:var(--prayer); color:var(--surface)}
+.prow.done .pn{color:var(--ink)}
+.prow:disabled{cursor:default}
+.prow:disabled .pn,.prow:disabled .pt{opacity:.55}
+.prow:disabled .tick{border-style:dashed}
+.prow.missed .tick{border-color:var(--warn)}
+
+/* su */
+.big{font-family:var(--display); font-size:30px; font-weight:500; line-height:1}
+.big small{font-family:var(--body); font-size:14px; color:var(--muted); font-weight:500}
+.bar{height:8px; border-radius:99px; background:var(--water-soft); overflow:hidden}
+.bar i{display:block; height:100%; background:var(--water); border-radius:99px; transition:width .25s}
+.glasses{display:flex; flex-wrap:wrap; gap:6px}
+.glass{width:34px; height:40px; border:0; background:none; padding:0; color:var(--water)}
+.glass svg{width:100%; height:100%}
+.row{display:flex; flex-wrap:wrap; gap:8px}
+.btn{border:1px solid var(--line); background:var(--surface-2); border-radius:999px; padding:9px 16px; font-weight:600}
+.btn.water{background:var(--water); border-color:var(--water); color:var(--surface)}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.5; cursor:default}
+
+/* spor */
+.chips{display:flex; flex-wrap:wrap; gap:6px}
+.chip{border:1px solid var(--line); background:var(--surface-2); border-radius:999px; padding:7px 13px; font-weight:500}
+.chip[aria-pressed="true"]{background:var(--sport); border-color:var(--sport); color:var(--surface)}
+.chips.day .chip[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+.sstat{display:flex; align-items:baseline; gap:8px}
+.sstat .big{color:var(--sport)}
+.sub-h{font-size:12px; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:600}
+
+/* gecmis */
+.stats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+.stat{background:var(--surface-2); border-radius:12px; padding:10px 12px}
+.stat b{display:block; font-family:var(--display); font-size:22px; font-weight:500}
+.stat span{font-size:12px; color:var(--muted)}
+.hist{display:flex; flex-direction:column}
+.hrow{display:grid; grid-template-columns:62px auto 1fr 46px; align-items:center; gap:12px; padding:9px 0; border-top:1px solid var(--line)}
+.hrow:first-child{border-top:0}
+.hd{font-size:13px; line-height:1.2}
+.hd b{display:block; font-weight:600; font-size:14px}
+.dots{display:flex; gap:4px}
+.dots i{width:10px; height:10px; border-radius:50%; border:1.5px solid var(--prayer)}
+.dots i.on{background:var(--prayer)}
+.mini{height:6px; border-radius:9px; background:var(--water-soft); overflow:hidden}
+.mini i{display:block; height:100%; background:var(--water)}
+.hs{text-align:right; font-size:13px; color:var(--sport); font-weight:600}
+.hs.none{color:var(--muted); font-weight:400}
+
+/* ayarlar */
+.field{display:grid; grid-template-columns:1fr auto; align-items:center; gap:10px}
+.field label{font-weight:500}
+.field input,.field select{background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:8px 10px; min-width:0; width:120px}
+.field input[type="checkbox"]{width:22px; height:22px; accent-color:var(--accent)}
+.topic{display:flex; gap:8px; align-items:center; background:var(--surface-2); border:1px dashed var(--line); border-radius:12px; padding:10px 12px}
+.topic code{flex:1; font:600 15px/1.2 ui-monospace, "Cascadia Mono", Consolas, monospace; overflow-wrap:anywhere; user-select:all}
+ol.steps{margin:0; padding-left:20px; display:flex; flex-direction:column; gap:8px}
+ol.steps a{color:var(--accent); font-weight:600}
+.status{display:flex; align-items:center; gap:8px; font-weight:600}
+.status i{width:9px; height:9px; border-radius:50%; background:var(--muted)}
+.status.on i{background:var(--accent)}
+.status.err i{background:var(--warn)}
+.note{font-size:13px; color:var(--muted); margin:0}
+
+/* alt menu */
+nav.tabs{position:fixed; left:0; right:0; bottom:0; background:var(--surface); border-top:1px solid var(--line); padding:6px 16px calc(env(safe-area-inset-bottom,0px) + 6px); display:flex; justify-content:center}
+nav.tabs div{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; width:100%; max-width:520px}
+nav.tabs button{border:0; background:none; border-radius:12px; padding:9px 4px; font-weight:600; color:var(--muted); display:flex; flex-direction:column; align-items:center; gap:2px; font-size:12px}
+nav.tabs button svg{width:22px; height:22px}
+nav.tabs button[aria-current="page"]{color:var(--accent); background:var(--surface-2)}
+
+.toast{position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom,0px) + 84px); transform:translateX(-50%) translateY(20px); background:var(--ink); color:var(--bg); padding:10px 16px; border-radius:12px; font-weight:500; opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; max-width:calc(100% - 32px)}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+.err{color:var(--warn); font-weight:500}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main class="wrap" id="app"></main>
+<nav class="tabs" aria-label="Bölümler"><div>
+  <button data-tab="bugun" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M16 4a8 8 0 1 0 4 12A7 7 0 0 1 16 4Z"/></svg>Bugün</button>
+  <button data-tab="gecmis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Geçmiş</button>
+  <button data-tab="ayarlar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Ayarlar</button>
+</div></nav>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<input type="file" id="importFile" accept="application/json" hidden>
+
+<script>
+'use strict';
+/* ---------- durum ---------- */
+const LS = 'vakit.v1';
+const DEF = {
+  settings: {
+    city: 'Antalya', topic: '', ntfyOn: false,
+    waterGoal: 2500, glass: 250, waterFrom: '09:00', waterTo: '21:00', waterEvery: 120,
+    sportTime: '18:30', sportDays: [0,1,2,3,4,5,6], sportGoal: 30,
+    lateMin: 30, summaryTime: '22:30',
+    n: { start: true, late: true, water: true, sport: true, summary: true }
+  },
+  days: {}, times: {}, sent: {}, lastSync: 0, lastSyncCount: 0, syncErr: ''
+};
+const clone = o => JSON.parse(JSON.stringify(o));
+function merge(r) {
+  const s = clone(DEF);
+  Object.assign(s, r);
+  s.settings = Object.assign(clone(DEF.settings), r.settings || {});
+  s.settings.n = Object.assign({}, DEF.settings.n, (r.settings || {}).n || {});
+  return s;
+}
+function load() { try { const r = JSON.parse(localStorage.getItem(LS)); if (r) return merge(r); } catch (e) {} return clone(DEF); }
+function save() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) {} }
+function randomTopic() { const a = new Uint8Array(10); crypto.getRandomValues(a); return 'vakit-' + Array.from(a, b => (b % 36).toString(36)).join(''); }
+let S = load();
+if (!S.settings.topic) { S.settings.topic = randomTopic(); save(); }
+let TAB = 'bugun';
+
+/* ---------- tarih ---------- */
+const pad = n => String(n).padStart(2, '0');
+const dkey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const fromKey = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+const at = (dk, hm) => { const [h, mi] = hm.split(':').map(Number); const d = fromKey(dk); d.setHours(h, mi, 0, 0); return d.getTime(); };
+const hmOf = ts => { const d = new Date(ts); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+const toMin = hm => { const [h, m] = hm.split(':').map(Number); return h * 60 + m; };
+const todayKey = () => dkey(new Date());
+const liters = ml => (ml / 1000).toLocaleString('tr-TR', { maximumFractionDigits: 2 });
+
+const P = [
+  { k: 'sabah', n: 'Sabah', end: 'gunes' },
+  { k: 'ogle', n: 'Öğle', end: 'ikindi' },
+  { k: 'ikindi', n: 'İkindi', end: 'aksam' },
+  { k: 'aksam', n: 'Akşam', end: 'yatsi' },
+  { k: 'yatsi', n: 'Yatsı', end: null }
+];
+const NAME = { sabah: 'Sabah', gunes: 'Güneş', ogle: 'Öğle', ikindi: 'İkindi', aksam: 'Akşam', yatsi: 'Yatsı' };
+const DAT = { sabah: 'Sabah vaktine', gunes: 'Güneşin doğuşuna', ogle: 'Öğleye', ikindi: 'İkindiye', aksam: 'Akşama', yatsi: 'Yatsıya' };
+const HIJRI = ['Muharrem','Safer','Rebiülevvel','Rebiülahir','Cemaziyelevvel','Cemaziyelahir','Recep','Şaban','Ramazan','Şevval','Zilkade','Zilhicce'];
+const DAYS = ['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'];
+const SPORTS = ['Yürüyüş','Koşu','Ağırlık','Bisiklet','Esneme','Diğer'];
+
+const peek = dk => S.days[dk];
+function day(dk) {
+  if (!S.days[dk]) S.days[dk] = { p: {}, water: 0, sport: { min: 0, type: '' } };
+  return S.days[dk];
+}
+
+/* ---------- namaz vakitleri ----------
+   Ana kaynak: Diyanet'in resmi takvimi (ezanvakti.emushaf.net, ~30 gun ileri).
+   Yedek: Aladhan, Diyanet yontemi (method 13) — birkac dakika sapabilir. */
+let timesErr = '';
+const EZAN = 'https://ezanvakti.emushaf.net';
+const fold = s => s.trim().replace(/İ/g, 'I').replace(/ı/g, 'i').toLocaleUpperCase('en').normalize('NFD').replace(/[̀-ͯ]/g, '');
+const placeKey = () => fold(S.settings.city);
+function timesFor(dk) {
+  const c = S.times;
+  return c && c.place === placeKey() && c.days ? c.days[dk] : undefined;
+}
+function storeDays(days, src) {
+  if (S.times.place !== placeKey()) S.times = { place: placeKey(), days: {} };
+  Object.assign(S.times.days, days);
+  S.times.src = src;
+  const min = dkey(addDays(new Date(), -3));
+  for (const k of Object.keys(S.times.days)) if (k < min) delete S.times.days[k];
+  save();
+}
+async function getJSON(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('Vakit servisi ' + r.status + ' döndü');
+  return r.json();
+}
+async function resolveIlce() {
+  const s = S.settings;
+  if (s.ilceId && s.ilceFor === placeKey()) return s.ilceId;
+  const sehirler = await getJSON(`${EZAN}/sehirler/2`);
+  const sehir = sehirler.find(x => fold(x.SehirAdi) === placeKey());
+  if (!sehir) throw new Error(`"${s.city}" il olarak bulunamadı`);
+  const ilceler = await getJSON(`${EZAN}/ilceler/${sehir.SehirID}`);
+  const ilce = ilceler.find(x => fold(x.IlceAdi) === placeKey()) || ilceler[0];
+  s.ilceId = ilce.IlceID; s.ilceFor = placeKey(); save();
+  return s.ilceId;
+}
+async function fetchDiyanet() {
+  const id = await resolveIlce();
+  const list = await getJSON(`${EZAN}/vakitler/${id}`);
+  const days = {};
+  for (const v of list) {
+    const [dd, mm, yy] = v.MiladiTarihKisa.split('.');
+    const [hd, hm, hy] = v.HicriTarihKisa.split('.').map(Number);
+    days[`${yy}-${mm}-${dd}`] = { sabah: v.Imsak, gunes: v.Gunes, ogle: v.Ogle, ikindi: v.Ikindi, aksam: v.Aksam, yatsi: v.Yatsi, hicri: `${hd} ${HIJRI[hm - 1]} ${hy}` };
+  }
+  if (!Object.keys(days).length) throw new Error('Vakit listesi boş geldi');
+  storeDays(days, 'Diyanet takvimi');
+}
+async function fetchAladhan() {
+  const now = new Date(), cut = s => s.slice(0, 5), days = {};
+  for (const d of [now, addDays(now, 5)]) {
+    const j = await getJSON(`https://api.aladhan.com/v1/calendarByCity/${d.getFullYear()}/${d.getMonth() + 1}?city=${encodeURIComponent(S.settings.city.trim())}&country=Turkey&method=13`);
+    if (j.code !== 200 || !Array.isArray(j.data)) throw new Error('Şehir bulunamadı');
+    for (const x of j.data) {
+      const [dd, mm, yy] = x.date.gregorian.date.split('-'), t = x.timings, h = x.date.hijri;
+      days[`${yy}-${mm}-${dd}`] = { sabah: cut(t.Fajr), gunes: cut(t.Sunrise), ogle: cut(t.Dhuhr), ikindi: cut(t.Asr), aksam: cut(t.Maghrib), yatsi: cut(t.Isha), hicri: `${Number(h.day)} ${HIJRI[h.month.number - 1]} ${h.year}` };
+    }
+  }
+  storeDays(days, 'Diyanet yöntemiyle hesap (yedek kaynak)');
+}
+let lastFetch = 0;
+async function ensureTimes(force) {
+  const now = new Date();
+  const have = [0, 1, 2].every(i => timesFor(dkey(addDays(now, i))));
+  // takvim yeterliyse gunde bir kez tazele
+  if (have && !force && S.times.src === 'Diyanet takvimi' && Date.now() - lastFetch < 12 * 3600e3) { timesErr = ''; return; }
+  if (!navigator.onLine) { timesErr = have ? '' : 'İnternet yok'; return; }
+  try { await fetchDiyanet(); lastFetch = Date.now(); timesErr = ''; }
+  catch (e) {
+    try { await fetchAladhan(); lastFetch = Date.now(); timesErr = ''; }
+    catch (e2) { timesErr = have ? '' : (e.message || 'Vakitler alınamadı'); }
+  }
+}
+
+/* o an hangi vakitteyiz, sonraki ne */
+function vakitState(now = Date.now()) {
+  const tk = dkey(new Date(now)), t = timesFor(tk);
+  if (!t) return null;
+  const seq = ['sabah', 'gunes', 'ogle', 'ikindi', 'aksam', 'yatsi'].map(k => ({ k, ts: at(tk, t[k]) }));
+  let next = seq.find(x => x.ts > now);
+  if (!next) {
+    const tmk = dkey(addDays(new Date(now), 1)), tm = timesFor(tmk);
+    if (tm) next = { k: 'sabah', ts: at(tmk, tm.sabah) };
+  }
+  let cur = null, curDay = tk;
+  for (const x of seq) if (x.ts <= now) cur = x.k;
+  if (cur === 'gunes') cur = null;               // kuslukta farz vakit yok
+  if (!cur) {
+    if (now < seq[0].ts) { cur = 'yatsi'; curDay = dkey(addDays(new Date(now), -1)); } // gece yarisindan sonra dunun yatsisi
+  }
+  return { t, cur, curDay, next };
+}
+
+/* ---------- ntfy hatirlatmalari ---------- */
+function buildEvents() {
+  const s = S.settings, now = Date.now(), horizon = now + 47 * 3600e3, out = [];
+  for (let i = 0; i < 3; i++) {
+    const d = addDays(new Date(), i), dk = dkey(d), t = timesFor(dk);
+    if (t) {
+      for (const p of P) {
+        const start = at(dk, t[p.k]);
+        const endTs = p.end ? at(dk, t[p.end]) : at(dk, '23:30');
+        const endName = p.end ? NAME[p.end] : null;
+        if (s.n.start) out.push({
+          id: `start|${p.k}|${start}`, ts: start, tags: ['mosque'], priority: 4,
+          title: `${p.n} vakti girdi · ${t[p.k]}`,
+          message: endName ? `${endName} ${t[p.end]} saatinde. Kıldıktan sonra uygulamada işaretle.` : 'Yatmadan önce kıl, uygulamada işaretle.'
+        });
+        const late = endTs - s.lateMin * 60e3;
+        if (s.n.late && late > start + 10 * 60e3) out.push({
+          id: `late|${p.k}|${late}`, ts: late, tags: ['hourglass_flowing_sand'], priority: 4,
+          title: `${p.n} vaktinin çıkmasına ${s.lateMin} dk`,
+          message: endName ? `Kılmadıysan şimdi kıl. ${endName} ${t[p.end]} saatinde.` : 'Kılmadıysan yatmadan önce kıl.'
+        });
+      }
+    }
+    if (s.n.water) {
+      const every = Math.max(30, Number(s.waterEvery) || 120);
+      for (let m = toMin(s.waterFrom); m <= toMin(s.waterTo); m += every) {
+        const ts = at(dk, `${pad(Math.floor(m / 60))}:${pad(m % 60)}`);
+        out.push({ id: `water|${ts}`, ts, tags: ['droplet'], priority: 3,
+          title: 'Su içme vakti',
+          message: `Bir bardak (${s.glass} ml) iç. Günlük hedef ${liters(s.waterGoal)} L.` });
+      }
+    }
+    if (s.n.sport && s.sportDays.includes(d.getDay())) {
+      const ts = at(dk, s.sportTime);
+      out.push({ id: `sport|${ts}`, ts, tags: ['muscle'], priority: 4,
+        title: 'Spor zamanı', message: `Bugünkü hedef: ${s.sportGoal} dakika. Bitince uygulamada işaretle.` });
+    }
+    if (s.n.summary) {
+      const ts = at(dk, s.summaryTime);
+      out.push({ id: `sum|${ts}`, ts, tags: ['crescent_moon'], priority: 3,
+        title: 'Günü kapat', message: 'Namaz, su ve sporu işaretledin mi? Vakit\'i açıp bak.' });
+    }
+  }
+  return out.filter(e => e.ts > now + 60e3 && e.ts < horizon).sort((a, b) => a.ts - b.ts);
+}
+
+async function ntfyPost(body) {
+  return fetch('https://ntfy.sh', { method: 'POST', body: JSON.stringify(Object.assign({ topic: S.settings.topic }, body)) });
+}
+let syncing = false;
+async function syncNtfy() {
+  if (!S.settings.ntfyOn || syncing) return;
+  if (!navigator.onLine) return;
+  syncing = true;
+  const now = Date.now();
+  for (const [id, ts] of Object.entries(S.sent)) if (ts < now) delete S.sent[id];
+  const todo = buildEvents().filter(e => !S.sent[e.id]);
+  let ok = 0, err = '';
+  for (const e of todo) {
+    try {
+      const r = await ntfyPost({ title: e.title, message: e.message, tags: e.tags, priority: e.priority, delay: String(Math.floor(e.ts / 1000)) });
+      if (r.status === 429) { err = 'ntfy sınırına takıldı, kalanlar sonra kurulacak'; break; }
+      if (!r.ok) { err = 'ntfy ' + r.status + ' döndü'; continue; }
+      S.sent[e.id] = e.ts; ok++; save();
+    } catch (x) { err = 'ntfy\'ye ulaşılamadı'; break; }
+    await new Promise(r => setTimeout(r, 200));
+  }
+  S.lastSync = Date.now(); S.syncErr = err;
+  if (ok) S.lastSyncCount = ok;
+  save(); syncing = false;
+  if (TAB === 'ayarlar') render();
+}
+
+/* ---------- yardimcilar ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2200); }
+const CHECK = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const GLASS = full => `<svg viewBox="0 0 34 40"><path d="M5 3h24l-3.2 33a3 3 0 0 1-3 2.7H11.2a3 3 0 0 1-3-2.7Z" fill="${full ? 'currentColor' : 'none'}" fill-opacity="${full ? '.9' : '0'}" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>${full ? '' : '<path d="M8.2 14h17.6" stroke="currentColor" stroke-width="1.5" stroke-opacity=".35"/>'}</svg>`;
+function dur(ms) {
+  const m = Math.max(0, Math.round(ms / 60000)), h = Math.floor(m / 60), r = m % 60;
+  return h ? `<span class="num">${h}</span><small>sa</small><span class="num">${pad(r)}</span><small>dk</small>` : `<span class="num">${r}</span><small>dk</small>`;
+}
+function allFive(dk) { const d = peek(dk); return !!d && P.every(p => d.p[p.k]); }
+function streak() {
+  let d = new Date(), n = 0;
+  if (!allFive(dkey(d))) d = addDays(d, -1);
+  while (allFive(dkey(d))) { n++; d = addDays(d, -1); }
+  return n;
+}
+
+/* ---------- gorunumler ---------- */
+function viewToday() {
+  const now = Date.now(), tk = todayKey(), st = vakitState(now), d = peek(tk) || { p: {}, water: 0, sport: { min: 0, type: '' } };
+  const s = S.settings, t = st && st.t;
+  const dateStr = new Date().toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' });
+  let html = `<header class="top"><div class="brand">Vakit</div><div class="dates"><b>${dateStr}</b>${t ? t.hicri + ' · ' : ''}${esc(s.city)}</div></header>`;
+
+  if (st && st.next) {
+    const nudge = st.cur && !(peek(st.curDay) || { p: {} }).p[st.cur];
+    html += `<section class="hero" aria-live="polite">
+      <div class="lbl">${DAT[st.next.k]} kalan</div>
+      <div class="count" id="count">${dur(st.next.ts - now)}</div>
+      <div class="sub">${NAME[st.next.k]} <span class="num">${hmOf(st.next.ts)}</span>${st.next.k === 'gunes' ? ' · sabah namazının vakti çıkıyor' : ''}</div>
+      ${nudge ? `<div class="nudge"><span>${NAME[st.cur]} vaktindesin, henüz işaretlenmedi.</span><button data-act="pray" data-k="${st.cur}" data-d="${st.curDay}">Kıldım</button></div>` : ''}
+    </section>`;
+  } else {
+    html += `<section class="hero"><div class="lbl">Namaz vakitleri</div><div class="sub ${timesErr ? 'err' : ''}">${timesErr ? esc(timesErr) + '. Bağlantı gelince tekrar denenecek.' : 'Vakitler yükleniyor…'}</div></section>`;
+  }
+
+  // namaz
+  const done = P.filter(p => d.p[p.k]).length;
+  html += `<section class="card"><div class="card-h"><h2>Namaz</h2><span class="meta num">${done}/5 · seri ${streak()} gün</span></div><div class="plist">`;
+  for (const p of P) {
+    const ts = t ? at(tk, t[p.k]) : null;
+    const entered = ts !== null && ts <= now;
+    const endTs = t && p.end ? at(tk, t[p.end]) : null;
+    const isNow = st && st.cur === p.k && st.curDay === tk;
+    const missed = !d.p[p.k] && endTs && endTs <= now;
+    const cls = ['prow', d.p[p.k] ? 'done' : '', isNow ? 'now' : '', missed ? 'missed' : ''].join(' ');
+    html += `<button class="${cls}" data-act="pray" data-k="${p.k}" data-d="${tk}" ${entered || d.p[p.k] ? '' : 'disabled'} aria-pressed="${!!d.p[p.k]}">
+      <span class="pn">${p.n}${isNow ? '<span class="pill">şimdi</span>' : ''}</span>
+      <span class="pt num">${t ? t[p.k] : '--:--'}</span>
+      <span class="tick">${CHECK}</span></button>`;
+  }
+  html += `</div>${t ? `<div class="info num">İmsak ${t.sabah} · Güneş ${t.gunes} · ${esc(S.times.src || '')}</div>` : ''}</section>`;
+
+  // su
+  const goal = s.waterGoal, glass = s.glass, count = Math.max(1, Math.round(goal / glass)), filled = Math.floor(d.water / glass);
+  html += `<section class="card"><div class="card-h"><h2>Su</h2><span class="meta">hedef ${liters(goal)} L</span></div>
+    <div class="big num" style="color:var(--water)">${liters(d.water)} <small>/ ${liters(goal)} L · ${Math.min(100, Math.round(d.water / goal * 100))}%</small></div>
+    <div class="bar"><i style="width:${Math.min(100, d.water / goal * 100)}%"></i></div>
+    <div class="glasses">${Array.from({ length: Math.max(count, filled) }, (_, i) => `<button class="glass" data-act="glass" data-i="${i}" aria-label="${i + 1}. bardak">${GLASS(i < filled)}</button>`).join('')}</div>
+    <div class="row"><button class="btn water" data-act="water" data-ml="${glass}">+ 1 bardak (${glass} ml)</button><button class="btn" data-act="water" data-ml="500">+ 500 ml</button><button class="btn ghost" data-act="water" data-ml="-${glass}" ${d.water ? '' : 'disabled'}>Geri al</button></div>
+  </section>`;
+
+  // spor
+  const sp = d.sport || { min: 0, type: '' }, sportDay = s.sportDays.includes(new Date().getDay());
+  html += `<section class="card"><div class="card-h"><h2>Spor</h2><span class="meta">${sportDay ? `hedef ${s.sportGoal} dk · ${s.sportTime}` : 'bugün dinlenme günü'}</span></div>
+    <div class="sstat"><span class="big num">${sp.min || 0}</span><span class="info">${sp.min >= s.sportGoal ? 'dakika · hedef tamam' : sp.min ? `dakika · hedefe ${s.sportGoal - sp.min} dk` : 'dakika'}</span></div>
+    <div class="sub-h">Ne kadar?</div>
+    <div class="chips">${[10, 15, 20, 30, 45, 60, 90].map(m => `<button class="chip num" data-act="smin" data-m="${m}" aria-pressed="${sp.min === m}">${m} dk</button>`).join('')}</div>
+    <div class="sub-h">Ne yaptın?</div>
+    <div class="chips">${SPORTS.map(x => `<button class="chip" data-act="stype" data-t="${x}" aria-pressed="${sp.type === x}">${x}</button>`).join('')}</div>
+  </section>`;
+
+  if (!S.settings.ntfyOn) html += `<section class="card"><div class="card-h"><h2>Hatırlatmalar kapalı</h2></div><p class="note">Telefonuna bildirim gelmesi için ücretsiz ntfy uygulamasını bir kez bağla.</p><div class="row"><button class="btn primary" data-act="tab" data-tab="ayarlar">Kur</button></div></section>`;
+  return html;
+}
+
+function viewHistory() {
+  const s = S.settings, rows = [];
+  let pr = 0, wat = 0, spd = 0, wdays = 0;
+  for (let i = 0; i < 30; i++) {
+    const dt = addDays(new Date(), -i), dk = dkey(dt), d = peek(dk);
+    if (i < 7) {
+      if (d) { pr += P.filter(p => d.p[p.k]).length; if (d.water) { wat += d.water; wdays++; } if (d.sport && d.sport.min) spd++; }
+    }
+    rows.push({ dt, dk, d });
+  }
+  let html = `<header class="top"><div class="brand">Geçmiş</div><div class="dates"><b>Son 7 gün</b>5 vakit serisi: ${streak()} gün</div></header>
+    <div class="stats">
+      <div class="stat"><b class="num" style="color:var(--prayer)">${pr}/35</b><span>vakit kılındı</span></div>
+      <div class="stat"><b class="num" style="color:var(--water)">${wdays ? liters(wat / wdays) : '0'} L</b><span>günlük ort. su</span></div>
+      <div class="stat"><b class="num" style="color:var(--sport)">${spd}/7</b><span>spor günü</span></div>
+    </div>
+    <section class="card"><div class="card-h"><h2>Son 30 gün</h2><span class="meta">namaz · su · spor</span></div><div class="hist">`;
+  for (const { dt, dk, d } of rows) {
+    const w = d ? Math.min(100, d.water / s.waterGoal * 100) : 0;
+    html += `<div class="hrow"><div class="hd"><b class="num">${dt.getDate()} ${dt.toLocaleDateString('tr-TR', { month: 'short' })}</b>${DAYS[dt.getDay()]}</div>
+      <div class="dots">${P.map(p => `<i class="${d && d.p[p.k] ? 'on' : ''}" title="${p.n}"></i>`).join('')}</div>
+      <div class="mini" title="${d ? liters(d.water) : 0} L"><i style="width:${w}%"></i></div>
+      <div class="hs num ${d && d.sport && d.sport.min ? '' : 'none'}">${d && d.sport && d.sport.min ? d.sport.min + ' dk' : '—'}</div></div>`;
+  }
+  html += `</div></section>`;
+  return html;
+}
+
+function viewSettings() {
+  const s = S.settings, on = s.ntfyOn;
+  const last = S.lastSync ? new Date(S.lastSync).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : null;
+  const pending = Object.keys(S.sent).length;
+  const chk = (k, label) => `<div class="field"><label for="n_${k}">${label}</label><input type="checkbox" id="n_${k}" data-set="n.${k}" ${s.n[k] ? 'checked' : ''}></div>`;
+  return `<header class="top"><div class="brand">Ayarlar</div><div class="dates"><b>Hatırlatmalar</b>ntfy üzerinden</div></header>
+  <section class="card">
+    <div class="card-h"><h2>Telefona bildirim</h2></div>
+    <div class="status ${on ? (S.syncErr ? 'err' : 'on') : ''}"><i></i>${on ? (S.syncErr ? esc(S.syncErr) : `Açık · ${pending} hatırlatma kurulu`) : 'Kapalı'}</div>
+    ${on && last ? `<p class="note">Son eşitleme ${last}. Uygulamayı 2 günde bir açman yeterli; her açılışta önümüzdeki 2 günün hatırlatmaları kurulur.</p>` : ''}
+    <ol class="steps">
+      <li><a href="https://play.google.com/store/apps/details?id=io.heckel.ntfy" target="_blank" rel="noopener">ntfy uygulamasını Play Store'dan indir</a> (ücretsiz).</li>
+      <li>ntfy'de <b>+</b> tuşuna bas ve bu kanal adını yaz:</li>
+    </ol>
+    <div class="topic"><code id="topicTxt">${esc(s.topic)}</code><button class="btn" data-act="copy">Kopyala</button></div>
+    <ol class="steps" start="3">
+      <li>Test bildirimi gönder, telefonuna geldiyse hatırlatmaları aç.</li>
+    </ol>
+    <div class="row">
+      <button class="btn" data-act="test">Test bildirimi gönder</button>
+      <button class="btn ${on ? '' : 'primary'}" data-act="ntfy">${on ? 'Hatırlatmaları kapat' : 'Hatırlatmaları aç'}</button>
+    </div>
+    <p class="note">Kanal adı senin şifren gibidir; bilen herkes bildirimlerini görebilir. Kurulan hatırlatmalar geri çekilemez, ayar değişiklikleri en geç 2 gün içinde tamamen yerleşir.</p>
+  </section>
+  <section class="card">
+    <div class="card-h"><h2>Neler hatırlatılsın?</h2></div>
+    ${chk('start', 'Vakit girince')}
+    ${chk('late', 'Vakit çıkmadan önce')}
+    ${chk('water', 'Su')}
+    ${chk('sport', 'Spor')}
+    ${chk('summary', 'Gün sonu kontrolü')}
+  </section>
+  <section class="card">
+    <div class="card-h"><h2>Namaz</h2></div>
+    <div class="field"><label for="city">Şehir</label><input id="city" data-set="city" value="${esc(s.city)}"></div>
+    <div class="field"><label for="lateMin">Vakit çıkmadan kaç dk önce</label><input id="lateMin" type="number" min="10" max="90" step="5" data-set="lateMin" value="${s.lateMin}"></div>
+    <p class="note">Yatsı için son hatırlatma 23:30'dan bu süre kadar önce gelir.</p>
+  </section>
+  <section class="card">
+    <div class="card-h"><h2>Su</h2></div>
+    <div class="field"><label for="waterGoal">Günlük hedef (ml)</label><input id="waterGoal" type="number" min="500" max="6000" step="250" data-set="waterGoal" value="${s.waterGoal}"></div>
+    <div class="field"><label for="glass">Bardak (ml)</label><input id="glass" type="number" min="100" max="1000" step="50" data-set="glass" value="${s.glass}"></div>
+    <div class="field"><label for="waterFrom">İlk hatırlatma</label><input id="waterFrom" type="time" data-set="waterFrom" value="${s.waterFrom}"></div>
+    <div class="field"><label for="waterTo">Son hatırlatma</label><input id="waterTo" type="time" data-set="waterTo" value="${s.waterTo}"></div>
+    <div class="field"><label for="waterEvery">Sıklık</label><select id="waterEvery" data-set="waterEvery">${[60, 90, 120, 150, 180].map(m => `<option value="${m}" ${+s.waterEvery === m ? 'selected' : ''}>${m % 60 ? (m / 60).toLocaleString('tr-TR') : m / 60} saatte bir</option>`).join('')}</select></div>
+  </section>
+  <section class="card">
+    <div class="card-h"><h2>Spor</h2></div>
+    <div class="field"><label for="sportTime">Hatırlatma saati</label><input id="sportTime" type="time" data-set="sportTime" value="${s.sportTime}"></div>
+    <div class="field"><label for="sportGoal">Hedef (dk)</label><input id="sportGoal" type="number" min="5" max="240" step="5" data-set="sportGoal" value="${s.sportGoal}"></div>
+    <div class="sub-h">Spor günleri</div>
+    <div class="chips day">${[1, 2, 3, 4, 5, 6, 0].map(i => `<button class="chip" data-act="sday" data-i="${i}" aria-pressed="${s.sportDays.includes(i)}">${DAYS[i]}</button>`).join('')}</div>
+  </section>
+  <section class="card">
+    <div class="card-h"><h2>Gün sonu</h2></div>
+    <div class="field"><label for="summaryTime">Kontrol saati</label><input id="summaryTime" type="time" data-set="summaryTime" value="${s.summaryTime}"></div>
+  </section>
+  <section class="card">
+    <div class="card-h"><h2>Yedek</h2></div>
+    <p class="note">Kayıtların yalnızca bu telefonda durur. Telefon değiştirirken yedeği indirip yenisinde geri yükle.</p>
+    <div class="row"><button class="btn" data-act="export">Yedeği indir</button><button class="btn" data-act="import">Yedekten yükle</button></div>
+  </section>`;
+}
+
+function render() {
+  const app = $('#app');
+  app.innerHTML = TAB === 'bugun' ? viewToday() : TAB === 'gecmis' ? viewHistory() : viewSettings();
+  document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === TAB ? 'page' : 'false'));
+}
+
+/* ---------- etkilesim ---------- */
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-act],[data-tab]');
+  if (!b) return;
+  const act = b.dataset.act || 'tab';
+  const tk = todayKey();
+  if (act === 'tab') { TAB = b.dataset.tab; render(); scrollTo(0, 0); return; }
+  if (act === 'pray') {
+    const d = day(b.dataset.d), k = b.dataset.k;
+    d.p[k] = !d.p[k];
+    save(); render();
+    if (d.p[k]) toast(allFive(b.dataset.d) ? 'Beş vakit tamam, Allah kabul etsin.' : `${NAME[k]} işaretlendi`);
+    return;
+  }
+  if (act === 'water') { const d = day(tk); d.water = Math.max(0, d.water + Number(b.dataset.ml)); save(); render(); if (d.water >= S.settings.waterGoal && Number(b.dataset.ml) > 0) toast('Günlük su hedefi tamam'); return; }
+  if (act === 'glass') {
+    const d = day(tk), i = Number(b.dataset.i), g = S.settings.glass, filled = Math.floor(d.water / g);
+    d.water = i + 1 === filled ? i * g : (i + 1) * g;
+    save(); render(); return;
+  }
+  if (act === 'smin') { const d = day(tk), m = Number(b.dataset.m); d.sport = d.sport || { min: 0, type: '' }; d.sport.min = d.sport.min === m ? 0 : m; save(); render(); if (d.sport.min >= S.settings.sportGoal) toast('Spor hedefi tamam'); return; }
+  if (act === 'stype') { const d = day(tk), t = b.dataset.t; d.sport = d.sport || { min: 0, type: '' }; d.sport.type = d.sport.type === t ? '' : t; save(); render(); return; }
+  if (act === 'sday') {
+    const i = Number(b.dataset.i), a = S.settings.sportDays;
+    S.settings.sportDays = a.includes(i) ? a.filter(x => x !== i) : a.concat(i);
+    save(); render(); syncNtfy(); return;
+  }
+  if (act === 'copy') {
+    try { await navigator.clipboard.writeText(S.settings.topic); toast('Kanal adı kopyalandı'); }
+    catch (x) { const r = document.createRange(); r.selectNodeContents($('#topicTxt')); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast('Seçildi, kopyala'); }
+    return;
+  }
+  if (act === 'test') {
+    b.disabled = true;
+    try {
+      const r = await ntfyPost({ title: 'Vakit bağlandı', message: 'Bu bildirim geldiyse hatırlatmalar çalışacak.', tags: ['white_check_mark'] });
+      toast(r.ok ? 'Gönderildi, telefonuna bak' : 'Gönderilemedi (' + r.status + ')');
+    } catch (x) { toast('ntfy\'ye ulaşılamadı, interneti kontrol et'); }
+    b.disabled = false; return;
+  }
+  if (act === 'ntfy') {
+    S.settings.ntfyOn = !S.settings.ntfyOn; save(); render();
+    if (S.settings.ntfyOn) { toast('Hatırlatmalar kuruluyor…'); await ensureTimes(); await syncNtfy(); toast(S.syncErr || 'Hatırlatmalar kuruldu'); }
+    else toast('Yeni hatırlatma kurulmayacak');
+    return;
+  }
+  if (act === 'export') {
+    const blob = new Blob([JSON.stringify({ settings: S.settings, days: S.days }, null, 1)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `vakit-yedek-${tk}.json`; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000); return;
+  }
+  if (act === 'import') { $('#importFile').click(); return; }
+});
+
+$('#importFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const j = JSON.parse(await f.text());
+    if (!j.days) throw 0;
+    S = merge(Object.assign({}, S, { settings: j.settings || S.settings, days: Object.assign({}, S.days, j.days) }));
+    save(); render(); toast('Yedek yüklendi');
+  } catch (x) { toast('Bu dosya Vakit yedeği değil'); }
+  e.target.value = '';
+});
+
+document.addEventListener('change', async e => {
+  const el = e.target.closest('[data-set]'); if (!el) return;
+  const path = el.dataset.set, s = S.settings;
+  let v = el.type === 'checkbox' ? el.checked : el.value;
+  if (el.type === 'number' || el.tagName === 'SELECT') { v = Number(v); if (!isFinite(v) || v <= 0) { render(); return; } }
+  if (el.type === 'time' && !v) { render(); return; }
+  if (path.startsWith('n.')) s.n[path.slice(2)] = v;
+  else s[path] = typeof v === 'string' ? v.trim() : v;
+  save();
+  if (path === 'city') { await ensureTimes(true); toast(timesErr ? timesErr : `Vakitler ${s.city} için güncellendi`); }
+  render(); syncNtfy();
+});
+
+/* ---------- baslangic ---------- */
+let shownDay = todayKey();
+function tick() {
+  if (todayKey() !== shownDay) { shownDay = todayKey(); ensureTimes().then(() => { render(); syncNtfy(); }); return; }
+  if (TAB !== 'bugun') return;
+  const st = vakitState();
+  const c = $('#count');
+  if (st && st.next && c) { if (st.next.ts <= Date.now() + 1000) render(); else c.innerHTML = dur(st.next.ts - Date.now()); }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { render(); ensureTimes().then(() => { render(); syncNtfy(); }); } });
+addEventListener('online', () => ensureTimes().then(() => { render(); syncNtfy(); }));
+setInterval(tick, 20000);
+
+render();
+ensureTimes().then(() => { render(); syncNtfy(); });
+if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
