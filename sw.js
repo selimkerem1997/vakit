@@ -1,6 +1,6 @@
 // Uygulama kabugunu onbellege alir; namaz vakti ve ntfy istekleri her zaman agdan gider.
-const CACHE = 'vakit-v1';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
+const CACHE = 'vakit-v2';
+const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './baba.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
