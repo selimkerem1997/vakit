@@ -73,12 +73,13 @@ button{cursor:pointer}
 .baba .face{width:76px; height:76px; border-radius:50%; overflow:hidden; box-shadow:0 0 0 2px var(--surface), 0 0 0 3px var(--line)}
 .baba .face svg{width:100%; height:100%; display:block}
 .baba .bubble{position:relative; background:var(--surface); border:1px solid var(--line); border-radius:4px 16px 16px 16px; padding:10px 14px 12px; display:flex; flex-direction:column; gap:8px}
-.baba .who{font-family:var(--display); font-weight:600; font-size:15px; color:var(--prayer)}
 .baba .bubble p{margin:0; font-size:16px; line-height:1.4}
 .baba.happy .bubble{border-color:var(--prayer)}
+.baba.sad .face{animation:tsk 1.4s ease-in-out 1}
+@keyframes tsk{0%,100%{transform:rotate(0)}20%{transform:rotate(-6deg)}45%{transform:rotate(5deg)}70%{transform:rotate(-3deg)}}
 .eyes{transform-origin:60px 58px; animation:blink 5s infinite}
 @keyframes blink{0%,94%,100%{transform:scaleY(1)}97%{transform:scaleY(.1)}}
-@media (prefers-reduced-motion: reduce){.eyes{animation:none}}
+@media (prefers-reduced-motion: reduce){.eyes,.baba.sad .face{animation:none}}
 
 /* kartlar */
 .card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px 14px 16px; display:flex; flex-direction:column; gap:12px}
@@ -192,7 +193,7 @@ const DEF = {
     waterGoal: 2500, glass: 250, waterFrom: '09:00', waterTo: '21:00', waterEvery: 120,
     sportTime: '18:30', sportDays: [0,1,2,3,4,5,6], sportGoal: 30,
     lateMin: 30, summaryTime: '22:30',
-    babaName: 'Baba', yatsiAsk: '23:30', waterAsk1: '14:00', waterAsk2: '20:00', sportAsk1: '13:00', sportAsk2: '21:00',
+    yatsiAsk: '23:30', waterAsk1: '14:00', waterAsk2: '20:00', sportAsk1: '13:00', sportAsk2: '21:00',
     n: { start: true, late: false, water: false, sport: true, summary: false, ask: true, askWater: true, askSport: true },
     v: 2
   },
@@ -249,70 +250,80 @@ function day(dk) {
 /* ---------- Baba ---------- */
 const L = {
   pAsk: [
-    'Evladım, {n} vakti çıktı. Kıldın mı bakalım?',
-    '{n} vakti geçti yavrum. Namazını kılabildin mi?',
-    'Hayırdır inşallah, {n} bitti. Kıldın mı evladım?',
-    'Bak {n} vakti çıktı. Kıldıysan içim rahat edecek.'
+    '{n} vakti çıktı. Kıldın, değil mi? Değil mi?',
+    '{n} bitti. Seccade mi serildi, yoksa yine telefon mu kaydırıldı?',
+    '{n} vakti gitti. Sen de gittin mi namaza, merak ettim.',
+    '{n} vakti çıktı. Cevabı tahmin ediyorum ama yine de soruyorum.',
+    'Evladım, {n} bitti. Kıldıysan söyle de bir sevineyim.'
   ],
   yAsk: [
-    'Yatmadan sorayım evladım: yatsıyı kıldın mı?',
-    'Gün bitti yavrum. Yatsını kıldın mı, öyle yat.',
-    'Uyumadan önce bir sorayım: yatsı tamam mı?'
+    'Yatmadan önce soruyorum: yatsı kılındı mı, yoksa yorgan mı kazandı?',
+    'Gece oldu. Yatsıyı kıldıysan rahat uyu. Kılmadıysan hiç uyuma, düşün biraz.',
+    'Yatsı? Hani şu günün son namazı. Hatırladın mı?'
   ],
   pYes: [
-    'Maşallah evladım, Allah kabul etsin.',
-    'Aferin benim evladıma. Gönlüm ferahladı.',
-    'Helal olsun. Böyle devam, ben seninle gurur duyuyorum.',
-    'Allah razı olsun. Duan da kabul olsun inşallah.'
+    'Hah, şöyle. Bak insan olacaksın galiba.',
+    'Aferin. Seni boşuna yetiştirmemişiz.',
+    'Kabul olsun. Yüzüm gülüyor bak, bunu sık göremezsin.',
+    'Maşallah. Bunu bütün mahalleye anlatacağım.',
+    'Allah kabul etsin. Şaşırttın beni, güzel şaşırttın.'
   ],
   pNo: [
-    'Olur öyle, üzülme. Kazasını kılarsın, bir sonrakini vaktinde kılalım olur mu?',
-    'Kızmadım evladım. Ama kazayı unutma, ben yine hatırlatırım.',
-    'İnsan bazen yetişemiyor. Şimdi abdest al, kazasını kıl, içimiz rahatlasın.'
+    'Hmm. Kazasını kılarsın herhalde. Herhalde…',
+    'Hiç şaşırmadım. Şaşırsaydım daha çok üzülürdüm.',
+    'Telefona ayırdığın vaktin onda biri yeterdi. Neyse. Bari kazasını kıl.',
+    'Senin yaşındayken ben… Neyse, anlatsam ne olacak.',
+    'Beş vakitten birini bile tutturamadın ha. Helal olsun sana. Şaka şaka, helal olmasın.'
   ],
   pStart: [
-    '{n} vakti girdi evladım. Kalk bir abdest al.',
-    'Ezan okundu, {n} vakti. İşini bırak da kıl gel.',
-    '{n} vakti girdi yavrum. Namazını geciktirme.'
+    '{n} vakti girdi. Kalk abdest al, telefon kaçmıyor.',
+    'Ezan okundu, {n} vakti. "Duymadım" deme, ben duydum.',
+    '{n} girdi. Hadi bir kere de ilk seferde kalk, şaşırt beni.'
   ],
   wAsk: [
-    'Su içtin mi bugün evladım? Böbreklerin bana dua etsin.',
-    'Antalya sıcağında su içmeden durulmaz. İçtin mi?',
-    'Bir bardak su iç de gözüm görsün. İçiyor musun?',
-    'Yavrum su içiyor musun? Çay kahve sayılmaz ha.'
+    'Su içtin mi? Çay sayılmaz, kahve hiç sayılmaz.',
+    'Antalya\'da yaşayıp su içmemek de ayrı bir yetenek. İçtin mi?',
+    'Saksıdaki çiçek bile senden çok su içiyor. Sen içtin mi bugün?',
+    'Su içtin mi evladım, yoksa yine "susamadım" mı diyeceksin?'
   ],
-  wYes: ['Aferin. Bir bardak daha iç, zarar gelmez.', 'İşte böyle. Sağlığın her şeyden önemli.', 'Maşallah. Su gibi aziz ol evladım.'],
-  wNo: ['Hadi kalk, şimdi bir bardak iç. Ben buradan bekliyorum.', 'Olmaz öyle. Şimdi bir bardak iç, sonra bana haber ver.', 'Başın ağrır sonra. Hemen bir bardak doldur.'],
+  wYes: ['Oh, sonunda. Böbreklerin sana teşekkür mektubu yazıyor.', 'Aferin. Bak cildin bile açıldı.', 'İyi. Bir bardak daha iç, bir şey olmaz.'],
+  wNo: ['Kuruyup gideceksin, kuru üzüm gibi. Kalk bir bardak doldur.', 'Su içmeyi beceremiyorsan başka neyi becereceksin? Hadi, bardak.', 'Kaktüs müsün evladım sen? Kalk su iç.'],
   sAsk: [
-    'Bugün biraz hareket ettin mi evladım?',
-    'Spor yaptın mı bugün? Yarım saat yürümek bile yeter.',
-    'Bütün gün oturma yavrum. Spor yaptın mı?',
-    'Gün bitmeden sorayım: bugün spor yaptın mı?'
+    'Bugün hareket ettin mi, yoksa koltuk yine seni mi yendi?',
+    'Spor yaptın mı? Buzdolabına yürümek sayılmıyor.',
+    'Merdiven çıktın diye "spor yaptım" deme. Yaptın mı?',
+    'Gün bitiyor. Spor yaptın mı, yoksa yarına mı kaldı yine?'
   ],
-  sYes: ['Maşallah, sağlığına sağlık!', 'Helal olsun. Vücudun sana teşekkür ediyor.', 'Aferin evladım, disiplin böyle olur.'],
-  sNo: ['Yarın beraber başlarız. Akşam yemekten sonra kısa bir yürüyüş yap bari.', 'Kızmam ama üzülürüm. On dakika esneme bile iyidir.', 'Olsun, yarın telafi ederiz. Ben hatırlatırım.'],
+  sYes: ['Vay! Kimse inanmaz ama ben inanıyorum.', 'Aferin. Göbek biraz korktu şu an.', 'Helal. Yarın da yaparsan seni ciddiye alacağım.'],
+  sNo: ['Koltuk yine kazandı demek. Koltuğu tebrik ederim.', 'Senin yaşında ben tarlada çalışıyordum. Sen parmağını kaydırıyorsun.', 'Olur olur. "Yarın başlarım" dersin, biliyorum.'],
   hello: {
-    gece: ['Hâlâ uyumadın mı evladım? Erken yat, sabaha kalkarsın.'],
-    sabah: ['Hayırlı sabahlar evladım. Kahvaltını yap, suyunu iç.', 'Günaydın yavrum. Bugün güzel bir gün olacak inşallah.'],
-    ogle: ['Nasılsın evladım? İşler yolunda mı?', 'Hayırlı günler yavrum. Suyunu içmeyi unutma.'],
-    aksam: ['Hayırlı akşamlar evladım. Günün nasıl geçti?', 'Akşam oldu, biraz dinlen yavrum.']
+    gece: ['Bu saatte ayakta ne işin var? Sabah namazına kalkacaksın ya, değil mi?'],
+    sabah: ['Günaydın. Kalktın mı, yoksa kaldırıldın mı?', 'Sabah sabah iyi gördüm seni. Bakalım akşama kadar dayanacak mı.'],
+    ogle: ['Gün yarılandı. Bakalım bugün yüzümü güldürecek misin.', 'Buradayım, izliyorum. Haberin olsun.'],
+    aksam: ['Akşam oldu. Hesap vakti yaklaşıyor.', 'Günün nasıl geçti? Ben biliyorum ama sen yine de anlat.']
   },
-  allDone: ['Bugün her şeyi tamamladın. Seninle gurur duyuyorum evladım.', 'Maşallah, bugün eksiğin yok. Rahat uyu.']
+  // aksatinca: acima ve laf sokma
+  lagPray: ['Bugün {x} vakit kaçmış. Bakıyorum, bakıyorum, bir şey diyemiyorum.', '{x} vakit kaza. Bu gidişle kazaların kazası olacak.'],
+  lagWater: ['Günde {x} litreyle mi yaşıyorsun? Deve misin evladım?', '{x} litre… Bu suyla çiçek bile sulanmaz.'],
+  lagSport: ['Bugün sıfır dakika spor. Sıfır. Rakamla yazayım: 0.', 'Hareket etmeyen bir sen varsın, bir de şu duvar.'],
+  allDone: ['Bugün her şey tamam. Bunu çerçeveletip duvara asacağım.', 'Kusursuz bir gün. Kimseye söyleme, şımarırsın.']
 };
 // ayni gun ayni soruya hep ayni cumle, gunden gune degissin
 function pick(arr, seed) { let h = 0; for (const c of String(seed)) h = (h * 31 + c.charCodeAt(0)) | 0; return arr[Math.abs(h) % arr.length]; }
 const fill = (s, n) => s.replace('{n}', n);
 
 function babaSVG(mood) {
-  const happy = mood === 'happy', sad = mood === 'sad';
+  const happy = mood === 'happy', pity = mood === 'sad';
   const eyes = happy
     ? '<path d="M44 58q4-4 8 0M68 58q4-4 8 0" fill="none" stroke="#2B2320" stroke-width="2.6" stroke-linecap="round"/>'
-    : '<g class="eyes"><circle cx="48" cy="58" r="2.8" fill="#2B2320"/><circle cx="72" cy="58" r="2.8" fill="#2B2320"/></g>';
-  const brows = sad
-    ? '<path d="M40 49l12-3M80 49l-12-3" stroke="#8E8A83" stroke-width="4" stroke-linecap="round"/>'
+    : pity  // yari kapali, tepeden bakan gozler
+      ? '<circle cx="48" cy="59.5" r="2.8" fill="#2B2320"/><circle cx="72" cy="59.5" r="2.8" fill="#2B2320"/><path d="M42.5 59h11v-7h-11ZM66.5 59h11v-7h-11Z" fill="#E8B98F"/><path d="M43 59h10M67 59h10" stroke="#2B2320" stroke-width="2" stroke-linecap="round"/>'
+      : '<g class="eyes"><circle cx="48" cy="58" r="2.8" fill="#2B2320"/><circle cx="72" cy="58" r="2.8" fill="#2B2320"/></g>';
+  const brows = pity  // bir kas yukarida: "hmm"
+    ? '<path d="M40 43q6-6 13-2" fill="none" stroke="#8E8A83" stroke-width="4" stroke-linecap="round"/><path d="M67 48l13 1" stroke="#8E8A83" stroke-width="4" stroke-linecap="round"/>'
     : '<path d="M40 47q6-4 13-1M67 46q7-3 13 1" fill="none" stroke="#8E8A83" stroke-width="4" stroke-linecap="round"/>';
-  const mouth = sad
-    ? '<path d="M54 84q6-3 12 0" fill="none" stroke="#7A3B2E" stroke-width="2.4" stroke-linecap="round"/>'
+  const mouth = pity
+    ? '<path d="M53 83q8-3 15 1" fill="none" stroke="#7A3B2E" stroke-width="2.4" stroke-linecap="round"/>'
     : '<path d="M52 81q8 7 16 0" fill="#7A3B2E"/>';
   return `<svg viewBox="0 0 120 120" aria-hidden="true">
     <circle cx="60" cy="60" r="60" fill="var(--prayer-soft)"/>
@@ -321,15 +332,17 @@ function babaSVG(mood) {
       <path d="M14 124q2-26 28-30h36q26 4 28 30Z" fill="#6B4E36"/>
       <path d="M48 94l12 14 12-14Z" fill="#EDE6DA"/>
       <path d="M52 86h16v10q-8 6-16 0Z" fill="#D9A47C"/>
+      <g class="head" ${pity ? 'transform="rotate(-8 60 90)"' : ''}>
       <ellipse cx="31" cy="61" rx="6" ry="8" fill="#D9A47C"/><ellipse cx="89" cy="61" rx="6" ry="8" fill="#D9A47C"/>
       <ellipse cx="60" cy="60" rx="29" ry="33" fill="#E8B98F"/>
       <path d="M31 58q-3-24 16-31q13-5 26 0q19 7 16 31q-3-14-9-19q-13 6-40 0q-6 5-9 19Z" fill="#BDB8AF"/>
-      ${brows}${eyes}
+      ${eyes}${brows}
       <g fill="none" stroke="#3A3531" stroke-width="2.2"><circle cx="48" cy="58" r="8.5"/><circle cx="72" cy="58" r="8.5"/><path d="M56.5 58h7M39.5 57l-7-2M80.5 57l7-2"/></g>
       <path d="M57 62q3 9 6 0" fill="none" stroke="#C98F66" stroke-width="2.4" stroke-linecap="round"/>
-      <ellipse cx="41" cy="72" rx="5" ry="3" fill="#E59A86" opacity=".45"/><ellipse cx="79" cy="72" rx="5" ry="3" fill="#E59A86" opacity=".45"/>
+      <ellipse cx="41" cy="72" rx="5" ry="3" fill="#E59A86" opacity="${pity ? '.15' : '.45'}"/><ellipse cx="79" cy="72" rx="5" ry="3" fill="#E59A86" opacity="${pity ? '.15' : '.45'}"/>
       ${mouth}
       <path d="M60 71q-9-3-17 3q-3 5 3 5q8-1 14-4q6 3 14 4q6 0 3-5q-8-6-17-3Z" fill="#A7A29A"/>
+      </g>
     </g></svg>`;
 }
 
@@ -373,7 +386,7 @@ function answer(dk, id, yes) {
   save();
 }
 function babaCard() {
-  const name = esc(S.settings.babaName || 'Baba'), tk = todayKey(), q = pendingAsks()[0];
+  const tk = todayKey(), q = pendingAsks()[0], st = S.settings;
   let text, mood = '', btns = '';
   if (babaSays) { text = babaSays.text; mood = babaSays.mood; }
   else if (q) {
@@ -382,13 +395,17 @@ function babaCard() {
     const no = q.type === 'p' ? 'Kılamadım' : q.type === 'w' ? 'İçmedim' : 'Yapmadım';
     btns = `<div class="row"><button class="btn primary" data-act="ans" data-d="${q.dk}" data-id="${q.id}" data-v="1">${yes}</button><button class="btn" data-act="ans" data-d="${q.dk}" data-id="${q.id}" data-v="0">${no}</button></div>`;
   } else {
-    const d = peek(tk), h = new Date().getHours();
-    const done = d && P.every(p => d.p[p.k]) && d.water >= S.settings.waterGoal && d.sport && d.sport.min;
+    const d = peek(tk) || { p: {}, water: 0, sport: { min: 0 } }, now = Date.now(), h = new Date().getHours(), t = timesFor(tk);
+    const missed = t ? P.filter(p => p.end && at(tk, t[p.end]) <= now && !d.p[p.k]).length : 0;
+    const done = P.every(p => d.p[p.k]) && d.water >= st.waterGoal && d.sport && d.sport.min;
     if (done) { text = pick(L.allDone, tk); mood = 'happy'; }
+    else if (missed) { text = pick(L.lagPray, tk + missed).replace('{x}', missed); mood = 'sad'; }
+    else if (h >= 18 && d.water < st.waterGoal / 2) { text = pick(L.lagWater, tk).replace('{x}', liters(d.water)); mood = 'sad'; }
+    else if (now >= at(tk, st.sportAsk2) && !(d.sport && d.sport.min)) { text = pick(L.lagSport, tk); mood = 'sad'; }
     else text = pick(L.hello[h < 5 ? 'gece' : h < 11 ? 'sabah' : h < 17 ? 'ogle' : 'aksam'], tk);
   }
   return `<section class="baba ${mood}"><div class="face">${babaSVG(mood)}</div>
-    <div class="bubble"><div class="who">${name}</div><p>${esc(text)}</p>${btns}</div></section>`;
+    <div class="bubble"><p>${esc(text)}</p>${btns}</div></section>`;
 }
 
 /* ---------- namaz vakitleri ----------
@@ -486,7 +503,7 @@ function vakitState(now = Date.now()) {
 /* ---------- ntfy hatirlatmalari ---------- */
 function buildEvents() {
   const s = S.settings, now = Date.now(), horizon = now + 47 * 3600e3, out = [];
-  const who = s.babaName || 'Baba', app = location.origin + location.pathname;
+  const app = location.origin + location.pathname;
   const LBL = { p: ['Kıldım', 'Kılamadım'], w: ['İçtim', 'İçmedim'], s: ['Yaptım', 'Yapmadım'] };
   const TAG = { p: 'mosque', w: 'droplet', s: 'muscle' };
   for (let i = 0; i < 3; i++) {
@@ -498,7 +515,7 @@ function buildEvents() {
         const endName = p.end ? NAME[p.end] : null;
         if (s.n.start) out.push({
           id: `start|${p.k}|${start}`, ts: start, tags: ['mosque'], priority: 4,
-          title: `${who} · ${p.n} ${t[p.k]}`,
+          title: `${p.n} vakti · ${t[p.k]}`,
           message: fill(pick(L.pStart, dk + p.k), p.n) + (endName ? ` (${endName} ${t[p.end]})` : '')
         });
         const late = endTs - s.lateMin * 60e3;
@@ -526,7 +543,7 @@ function buildEvents() {
     for (const a of asksFor(dk)) {
       const u = v => `${app}?c=${a.dk}~${a.id}~${v}`;
       out.push({ id: `ask|${a.id}|${a.ts}`, ts: a.ts, tags: [TAG[a.type]], priority: 4,
-        title: who, message: a.q, click: app,
+        title: a.type === 'p' ? (a.k === 'yatsi' ? 'Yatsı' : `${NAME[a.k]} vakti çıktı`) : a.type === 'w' ? 'Su' : 'Spor', message: a.q, click: app,
         actions: [{ action: 'view', label: LBL[a.type][0], url: u(1), clear: true }, { action: 'view', label: LBL[a.type][1], url: u(0), clear: true }] });
     }
     if (s.n.summary) {
@@ -710,8 +727,7 @@ function viewSettings() {
     ${chk('summary', 'Gün sonu kontrolü')}
   </section>
   <section class="card">
-    <div class="card-h"><h2>Baba</h2></div>
-    <div class="field"><label for="babaName">Adı</label><input id="babaName" data-set="babaName" value="${esc(s.babaName)}"></div>
+    <div class="card-h"><h2>Soru saatleri</h2></div>
     <div class="field"><label for="yatsiAsk">Yatsıyı sorma saati</label><input id="yatsiAsk" type="time" data-set="yatsiAsk" value="${s.yatsiAsk}"></div>
     <div class="field"><label for="waterAsk1">Su sorusu 1</label><input id="waterAsk1" type="time" data-set="waterAsk1" value="${s.waterAsk1}"></div>
     <div class="field"><label for="waterAsk2">Su sorusu 2</label><input id="waterAsk2" type="time" data-set="waterAsk2" value="${s.waterAsk2}"></div>
@@ -798,7 +814,7 @@ document.addEventListener('click', async e => {
   if (act === 'test') {
     b.disabled = true;
     try {
-      const r = await ntfyPost({ title: S.settings.babaName || 'Baba', message: 'Evladım, bu mesaj geldiyse artık seni ben takip edeceğim. Namazını, suyunu, sporunu soracağım.', tags: ['white_check_mark'], icon: new URL('baba.png', location.href).href, click: location.origin + location.pathname });
+      const r = await ntfyPost({ title: 'Vakit', message: 'Bu mesaj geldiyse artık gözüm üstünde. Namazını, suyunu, sporunu soracağım; kaçamazsın.', tags: ['white_check_mark'], icon: new URL('baba.png', location.href).href, click: location.origin + location.pathname });
       toast(r.ok ? 'Gönderildi, telefonuna bak' : 'Gönderilemedi (' + r.status + ')');
     } catch (x) { toast('ntfy\'ye ulaşılamadı, interneti kontrol et'); }
     b.disabled = false; return;
