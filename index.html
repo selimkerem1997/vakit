@@ -44,6 +44,7 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0}
 body{background:var(--bg); color:var(--ink); font:15px/1.45 var(--body); -webkit-tap-highlight-color:transparent}
 button,input,select{font:inherit; color:inherit}
@@ -208,8 +209,16 @@ function merge(r) {
   s.settings.v = (r.settings && r.settings.v) || (r.settings ? 1 : DEF.settings.v);
   return s;
 }
-function load() { try { const r = JSON.parse(localStorage.getItem(LS)); if (r) return merge(r); } catch (e) {} return clone(DEF); }
-function save() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) {} }
+// Android uygulamasinin icinde miyiz? (MainActivity window.VakitApp koprusunu ekler)
+const APP = typeof window.VakitApp !== 'undefined';
+function load() {
+  try { const r = JSON.parse(APP ? window.VakitApp.load() : localStorage.getItem(LS)); if (r) return merge(r); } catch (e) {}
+  return clone(DEF);
+}
+function save() {
+  const j = JSON.stringify(S);
+  try { if (APP) window.VakitApp.save(j); else localStorage.setItem(LS, j); } catch (e) {}
+}
 function randomTopic() { const a = new Uint8Array(10); crypto.getRandomValues(a); return 'vakit-' + Array.from(a, b => (b % 36).toString(36)).join(''); }
 let S = load();
 if (!S.settings.topic) { S.settings.topic = randomTopic(); save(); }
@@ -585,6 +594,7 @@ function legacySeq(id, ts) {
 
 let syncing = false, syncAgain = false;
 async function syncNtfy() {
+  if (APP) { syncNativeSoon(); return; }
   // kapatildiysa ve silinmemis kalan varsa (ntfy siniri vb.) silmeye devam et
   if (!S.settings.ntfyOn) { if (Object.values(S.sent).some(v => typeof v === 'object' && !v.legacy && v.ts > Date.now())) clearNtfy(); return; }
   if (syncing) { syncAgain = true; return; }
@@ -622,6 +632,100 @@ async function syncNtfy() {
   if (syncAgain) { syncAgain = false; syncNtfy(); }
 }
 // kapatilinca: kurulu olanlarin hepsini sil
+/* ---------- Android uygulamasi: yerel alarm + ekran ortasinda soru ---------- */
+const NATIVE_DAYS = 32;
+function nativeAsk(a) {
+  const OPTS = {
+    p: [['Kıldım', 1], ['Kılamadım', 0]],
+    w: [['1 bardak', 1], ['2', 2], ['3', 3], ['4+', 4], ['İçmedim', 0]],
+    s: [['15 dk', 15], ['30 dk', 30], ['45+ dk', 45], ['Yapmadım', 0]]
+  };
+  const Y = { p: L.pYes, w: L.wYes, s: L.sYes }, N = { p: L.pNo, w: L.wNo, s: L.sNo };
+  return { kind: 'ask', id: a.id, dk: a.dk, type: a.type, key: a.k || '', ts: a.ts,
+    title: a.type === 'p' ? (a.k === 'yatsi' ? 'Yatsı' : `${NAME[a.k]} vakti çıktı`) : a.type === 'w' ? 'Su' : 'Spor',
+    q: a.q, yes: pick(Y[a.type], a.dk + a.id + 'y'), no: pick(N[a.type], a.dk + a.id + 'n'),
+    opts: OPTS[a.type], glass: S.settings.glass };
+}
+function buildNativeEvents() {
+  const s = S.settings, now = Date.now(), out = [];
+  let lastTimes = null;
+  for (let i = 0; i < NATIVE_DAYS; i++) {
+    const d = addDays(new Date(), i), dk = dkey(d), t = timesFor(dk);
+    if (t) {
+      lastTimes = dk;
+      for (const p of P) {
+        const start = at(dk, t[p.k]), endName = p.end ? NAME[p.end] : null;
+        if (s.n.start) out.push({ kind: 'note', id: `start-${p.k}`, dk, ts: start, title: `${p.n} vakti · ${t[p.k]}`,
+          text: fill(pick(L.pStart, dk + p.k), p.n) + (endName ? ` (${endName} ${t[p.end]})` : '') });
+        const late = (p.end ? at(dk, t[p.end]) : at(dk, '23:30')) - s.lateMin * 60e3;
+        if (s.n.late && late > start + 10 * 60e3 && !(peek(dk) && peek(dk).p[p.k])) out.push({ kind: 'note', id: `late-${p.k}`, dk, ts: late,
+          title: `${p.n} vaktinin çıkmasına ${s.lateMin} dk`, text: endName ? `Kılmadıysan şimdi kıl. ${endName} ${t[p.end]} saatinde.` : 'Kılmadıysan yatmadan önce kıl.' });
+      }
+    }
+    if (s.n.water) {
+      const every = Math.max(30, Number(s.waterEvery) || 120);
+      for (let m = toMin(s.waterFrom); m <= toMin(s.waterTo); m += every) {
+        const hm = `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+        out.push({ kind: 'note', id: `water-${hm}`, dk, ts: at(dk, hm), title: 'Su içme vakti', text: `Bir bardak (${s.glass} ml) iç.` });
+      }
+    }
+    if (s.n.sport && s.sportDays.includes(d.getDay()))
+      out.push({ kind: 'note', id: 'sport', dk, ts: at(dk, s.sportTime), title: 'Spor zamanı', text: `Bugünkü hedef: ${s.sportGoal} dakika.` });
+    if (s.n.summary)
+      out.push({ kind: 'note', id: 'sum', dk, ts: at(dk, s.summaryTime), title: 'Günü kapat', text: 'Namaz, su ve sporu işaretledin mi?' });
+    for (const a of asksFor(dk)) if (!answered(a)) out.push(nativeAsk(a));
+  }
+  // namaz vakitleri bitmeden bir gun once: "uygulamayi ac da yenileyeyim"
+  if (lastTimes) {
+    const ts = at(dkey(addDays(fromKey(lastTimes), -1)), '20:00');
+    out.push({ kind: 'note', id: 'yenile', dk: lastTimes, ts, title: 'Vakitler bitiyor',
+      text: 'Bir aydır yüzüme bakmıyorsun. Uygulamayı bir aç da namaz vakitlerini yenileyeyim.' });
+  }
+  return out.filter(e => e.ts > now + 30e3).sort((a, b) => a.ts - b.ts);
+}
+let nativeT;
+function syncNativeSoon() {
+  clearTimeout(nativeT);
+  nativeT = setTimeout(() => { try { window.VakitApp.setSchedule(JSON.stringify(buildNativeEvents())); } catch (e) {} }, 800);
+}
+// ekran ortasindaki kutudan / bildirimden gelen cevaplari isle
+function applyNative() {
+  if (!APP) return false;
+  let list = [];
+  try { list = JSON.parse(window.VakitApp.takeAnswers() || '[]'); } catch (e) {}
+  for (const a of list) {
+    const d = day(a.dk), v = Number(a.val) || 0;
+    d.ask = d.ask || {};
+    d.ask[a.id] = v > 0;
+    if (a.type === 'p') d.p[a.id.slice(2)] = v > 0;
+    else if (a.type === 'w') d.water += v * (Number(a.glass) || S.settings.glass);
+    else if (a.type === 's') { d.sport = d.sport || { min: 0, type: '' }; d.sport.min = Math.max(d.sport.min || 0, v); }
+  }
+  if (list.length) save();
+  return list.length > 0;
+}
+window.vakitResume = () => {
+  S = load();
+  applyNative();
+  render();
+  ensureTimes().then(() => { render(); syncNativeSoon(); });
+};
+function nativeStatus() { try { return JSON.parse(window.VakitApp.status()); } catch (e) { return {}; } }
+function nativeCard() {
+  const st = nativeStatus();
+  const row = (ok, label, act, btn) => `<div class="field"><label>${label}</label>${ok ? '<span class="status on"><i></i>Tamam</span>' : `<button class="btn primary" data-act="${act}">${btn}</button>`}</div>`;
+  const next = st.next ? new Date(st.next).toLocaleString('tr-TR', { weekday: 'long', hour: '2-digit', minute: '2-digit' }) : null;
+  return `<section class="card">
+    <div class="card-h"><h2>Telefon izinleri</h2></div>
+    ${row(st.overlay, 'Ekranın ortasında sorabilsin', 'perm-overlay', 'İzin ver')}
+    ${row(st.notif, 'Bildirim gösterebilsin', 'perm-notif', 'İzin ver')}
+    ${row(st.exact, 'Tam saatinde sorsun', 'perm-exact', 'İzin ver')}
+    ${row(st.battery, 'Pil tasarrufu susturmasın', 'perm-battery', 'Ayarla')}
+    <p class="note">${next ? `Sıradaki: ${next}. Önümüzdeki ${NATIVE_DAYS} gün kurulu; internet gerekmez.` : 'Henüz kurulu soru yok.'}</p>
+    <div class="row"><button class="btn" data-act="try" data-t="w">Su sorusunu şimdi göster</button><button class="btn" data-act="try" data-t="p">Namaz sorusunu göster</button></div>
+  </section>`;
+}
+
 let clearing = false;
 async function clearNtfy() {
   if (clearing) return;
@@ -709,7 +813,8 @@ function viewToday() {
     <div class="chips">${SPORTS.map(x => `<button class="chip" data-act="stype" data-t="${x}" aria-pressed="${sp.type === x}">${x}</button>`).join('')}</div>
   </section>`;
 
-  if (!S.settings.ntfyOn) html += `<section class="card"><div class="card-h"><h2>Hatırlatmalar kapalı</h2></div><p class="note">Telefonuna bildirim gelmesi için ücretsiz ntfy uygulamasını bir kez bağla.</p><div class="row"><button class="btn primary" data-act="tab" data-tab="ayarlar">Kur</button></div></section>`;
+  if (APP) { const st = nativeStatus(); if (!st.overlay) html += `<section class="card"><div class="card-h"><h2>Bir izin eksik</h2></div><p class="note">Hangi uygulamada olursan ol ekranın ortasında sorabilmem için "diğer uygulamaların üzerinde göster" izni lazım.</p><div class="row"><button class="btn primary" data-act="perm-overlay">İzin ver</button></div></section>`; }
+  else if (!S.settings.ntfyOn) html += `<section class="card"><div class="card-h"><h2>Hatırlatmalar kapalı</h2></div><p class="note">Telefonuna bildirim gelmesi için ücretsiz ntfy uygulamasını bir kez bağla.</p><div class="row"><button class="btn primary" data-act="tab" data-tab="ayarlar">Kur</button></div></section>`;
   return html;
 }
 
@@ -746,8 +851,9 @@ function viewSettings() {
   const last = S.lastSync ? new Date(S.lastSync).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : null;
   const pending = Object.keys(S.sent).length;
   const chk = (k, label) => `<div class="field"><label for="n_${k}">${label}</label><input type="checkbox" id="n_${k}" data-set="n.${k}" ${s.n[k] ? 'checked' : ''}></div>`;
-  return `<header class="top"><div class="brand">Ayarlar</div><div class="dates"><b>Hatırlatmalar</b>ntfy üzerinden</div></header>
-  <section class="card">
+  return `<header class="top"><div class="brand">Ayarlar</div><div class="dates"><b>Hatırlatmalar</b>${APP ? 'telefonun kendisinde' : 'ntfy üzerinden'}</div></header>
+  ${APP ? nativeCard() : ''}
+  <section class="card" ${APP ? 'hidden' : ''}>
     <div class="card-h"><h2>Telefona bildirim</h2></div>
     <div class="status ${on ? (S.syncErr ? 'err' : 'on') : ''}"><i></i>${on ? (S.syncErr ? esc(S.syncErr) : `Açık · ${pending} hatırlatma kurulu`) : 'Kapalı'}</div>
     ${on && last ? `<p class="note">Son eşitleme ${last}. Uygulamayı her açtığında ya da bir bildirime dokunduğunda önümüzdeki 3 günün bildirimleri yeniden kurulur. 3 gün hiç dokunmazsan son bir uyarı gelir.</p>` : ''}
@@ -813,7 +919,7 @@ function viewSettings() {
   <section class="card">
     <div class="card-h"><h2>Yedek</h2></div>
     <p class="note">Kayıtların yalnızca bu telefonda durur. Telefon değiştirirken yedeği indirip yenisinde geri yükle.</p>
-    <div class="row"><button class="btn" data-act="export">Yedeği indir</button><button class="btn" data-act="import">Yedekten yükle</button></div>
+    <div class="row"><button class="btn" data-act="export">${APP ? 'Yedeği paylaş' : 'Yedeği indir'}</button><button class="btn" data-act="import" ${APP ? 'hidden' : ''}>Yedekten yükle</button></div>
   </section>`;
 }
 
@@ -876,6 +982,19 @@ document.addEventListener('click', async e => {
     else { toast('Hatırlatmalar siliniyor…'); await clearNtfy(); toast('Hatırlatmalar kapatıldı'); render(); }
     return;
   }
+  if (act.startsWith('perm-')) {
+    const m = { 'perm-overlay': 'requestOverlay', 'perm-notif': 'requestNotif', 'perm-exact': 'requestExact', 'perm-battery': 'requestBattery' }[act];
+    try { window.VakitApp[m](); } catch (x) {}
+    return;
+  }
+  if (act === 'try') {
+    const type = b.dataset.t, tk = todayKey();
+    const a = type === 'w' ? { id: 'w1', type: 'w', dk: tk, ts: Date.now(), q: pick(L.wAsk, Date.now()) }
+      : { id: 'p:ogle', type: 'p', k: 'ogle', dk: tk, ts: Date.now(), q: fill(pick(L.pAsk, Date.now()), 'Öğle') };
+    try { window.VakitApp.testAsk(JSON.stringify(nativeAsk(a))); } catch (x) {}
+    return;
+  }
+  if (act === 'export' && APP) { try { window.VakitApp.share(JSON.stringify({ settings: S.settings, days: S.days })); } catch (x) {} return; }
   if (act === 'export') {
     const blob = new Blob([JSON.stringify({ settings: S.settings, days: S.days }, null, 1)], { type: 'application/json' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `vakit-yedek-${tk}.json`; a.click();
@@ -926,6 +1045,7 @@ setInterval(tick, 20000);
   if (m) { answer(m[1], m[2], m[3] === '1'); babaT = setTimeout(() => { babaSays = null; if (TAB === 'bugun') render(); }, 9000); }
   if (location.search) history.replaceState(null, '', location.pathname);
 })();
+applyNative();
 render();
 ensureTimes().then(() => { render(); syncNtfy(); });
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});

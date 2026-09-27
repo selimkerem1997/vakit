@@ -1,0 +1,45 @@
+name: Android APK
+
+on:
+  push:
+    paths: ['android/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Imza anahtari
+        env:
+          KS_B64: ${{ secrets.KS_B64 }}
+        run: echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/vakit.jks"
+
+      - name: Derle
+        working-directory: android
+        env:
+          KS_PATH: ${{ runner.temp }}/vakit.jks
+          KS_PASS: ${{ secrets.KS_PASS }}
+          VERSION_CODE: ${{ github.run_number }}
+        run: gradle assembleRelease --no-daemon --stacktrace
+
+      - name: Yayinla
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk vakit.apk
+          gh release delete apk -y --cleanup-tag || true
+          gh release create apk vakit.apk --title "Vakit Android" --notes "Son sürüm: 1.${{ github.run_number }}"

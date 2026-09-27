@@ -1,0 +1,40 @@
+plugins {
+    id 'com.android.application'
+}
+
+def vc = (System.getenv('VERSION_CODE') ?: '1').toInteger()
+
+android {
+    namespace 'tr.vakit.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'tr.vakit.app'
+        minSdk 26
+        targetSdk 34
+        versionCode vc
+        versionName "1.${vc}"
+    }
+
+    signingConfigs {
+        release {
+            // imza anahtari GitHub sirrindan gelir; ayni anahtar olmazsa guncelleme kurulmaz
+            storeFile file(System.getenv('KS_PATH') ?: 'yok.jks')
+            storePassword System.getenv('KS_PASS')
+            keyAlias 'vakit'
+            keyPassword System.getenv('KS_PASS')
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
